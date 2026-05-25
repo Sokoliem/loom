@@ -544,10 +544,21 @@ var __loomTerminalBoot = (() => {
     function connect() {
       status("connecting");
       ws = new WebSocket(opts.wsUrl);
-      ws.addEventListener("open", () => {
+      ws.addEventListener("open", async () => {
         reconnectAttempt = 0;
         status("open");
+        if (document.fonts?.ready) {
+          try {
+            await document.fonts.ready;
+          } catch {
+          }
+        }
+        cellMetrics = null;
         sendResize();
+        setTimeout(() => {
+          cellMetrics = null;
+          sendResize();
+        }, 250);
       });
       ws.addEventListener("message", (ev) => {
         let msg;
@@ -584,17 +595,21 @@ var __loomTerminalBoot = (() => {
       if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
     }
     function measureCell() {
-      const row = opts.host.querySelector(".rift-row");
-      if (row) {
-        const span = row.querySelector("span");
-        if (span) {
-          return {
-            cellWidth: Math.max(1, span.getBoundingClientRect().width),
-            cellHeight: Math.max(1, row.getBoundingClientRect().height)
-          };
-        }
-      }
-      return { cellWidth: 9, cellHeight: 18 };
+      const riftEl = opts.host.querySelector(".rift-terminal");
+      const container = riftEl ?? opts.host;
+      const probe = document.createElement("span");
+      probe.textContent = "M".repeat(80);
+      probe.style.cssText = "position:absolute;visibility:hidden;white-space:pre;pointer-events:none;left:0;top:0";
+      container.appendChild(probe);
+      const rect = probe.getBoundingClientRect();
+      const lineHeight = parseFloat(getComputedStyle(container).lineHeight);
+      container.removeChild(probe);
+      const cellWidth = Math.max(1, rect.width / 80);
+      const cellHeight = Math.max(
+        1,
+        Number.isFinite(lineHeight) ? lineHeight : rect.height
+      );
+      return { cellWidth, cellHeight };
     }
     function pointToCell(clientX, clientY) {
       if (!cellMetrics) cellMetrics = measureCell();

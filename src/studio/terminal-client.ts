@@ -61,10 +61,28 @@ window.__loomTerminal = (opts: BootOptions) => {
     status("connecting");
     ws = new WebSocket(opts.wsUrl);
 
-    ws.addEventListener("open", () => {
+    ws.addEventListener("open", async () => {
       reconnectAttempt = 0;
       status("open");
+      // Wait for rift's font (Geist Mono) to actually load before measuring —
+      // otherwise the first sendResize uses fallback-font metrics and the
+      // PTY ends up at a too-narrow column count.
+      if (document.fonts?.ready) {
+        try {
+          await document.fonts.ready;
+        } catch {
+          /* noop */
+        }
+      }
+      cellMetrics = null;
       sendResize();
+      // Belt-and-suspenders: re-measure once after layout has settled. Some
+      // browsers report 0×0 for the .rift-terminal element until it has been
+      // painted at least once.
+      setTimeout(() => {
+        cellMetrics = null;
+        sendResize();
+      }, 250);
     });
     ws.addEventListener("message", (ev) => {
       let msg: { kind?: string; frame?: unknown; code?: number; message?: string };
@@ -104,20 +122,27 @@ window.__loomTerminal = (opts: BootOptions) => {
   }
 
   function measureCell(): CellMetrics {
-    // Rift renders rows as .rift-row elements containing cells. Measure the
-    // first rendered row to get the cell width + height in CSS pixels.
-    const row = opts.host.querySelector<HTMLElement>(".rift-row");
-    if (row) {
-      const span = row.querySelector<HTMLElement>("span");
-      if (span) {
-        return {
-          cellWidth: Math.max(1, span.getBoundingClientRect().width),
-          cellHeight: Math.max(1, row.getBoundingClientRect().height),
-        };
-      }
-    }
-    // Fallback before the first frame paints — match rift defaults.
-    return { cellWidth: 9, cellHeight: 18 };
+    // Rift styles cells with `width:Nch` where N is column count, so a single
+    // span's width can be 2× when it holds a wide glyph. The only reliable
+    // way to get a single-cell width is to render our own probe inside the
+    // .rift-terminal element so it inherits rift's font-family / font-size /
+    // line-height, then measure a known 1-char monospace string.
+    const riftEl = opts.host.querySelector<HTMLElement>(".rift-terminal");
+    const container = riftEl ?? opts.host;
+    const probe = document.createElement("span");
+    probe.textContent = "M".repeat(80);
+    probe.style.cssText =
+      "position:absolute;visibility:hidden;white-space:pre;pointer-events:none;left:0;top:0";
+    container.appendChild(probe);
+    const rect = probe.getBoundingClientRect();
+    const lineHeight = parseFloat(getComputedStyle(container).lineHeight);
+    container.removeChild(probe);
+    const cellWidth = Math.max(1, rect.width / 80);
+    const cellHeight = Math.max(
+      1,
+      Number.isFinite(lineHeight) ? lineHeight : rect.height,
+    );
+    return { cellWidth, cellHeight };
   }
 
   function pointToCell(clientX: number, clientY: number): { row: number; col: number } {
