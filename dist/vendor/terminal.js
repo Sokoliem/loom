@@ -540,6 +540,7 @@ var __loomTerminalBoot = (() => {
     let ws = null;
     let alive = true;
     let reconnectAttempt = 0;
+    let cellMetrics = null;
     function connect() {
       status("connecting");
       ws = new WebSocket(opts.wsUrl);
@@ -582,33 +583,112 @@ var __loomTerminalBoot = (() => {
     function send(message) {
       if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
     }
-    function sendInput(data) {
-      send({ kind: "input", data });
+    function measureCell() {
+      const row = opts.host.querySelector(".rift-row");
+      if (row) {
+        const span = row.querySelector("span");
+        if (span) {
+          return {
+            cellWidth: Math.max(1, span.getBoundingClientRect().width),
+            cellHeight: Math.max(1, row.getBoundingClientRect().height)
+          };
+        }
+      }
+      return { cellWidth: 9, cellHeight: 18 };
+    }
+    function pointToCell(clientX, clientY) {
+      if (!cellMetrics) cellMetrics = measureCell();
+      const rect = opts.host.getBoundingClientRect();
+      const x = clientX - rect.left;
+      const y = clientY - rect.top + opts.host.scrollTop;
+      const col = Math.max(0, Math.floor(x / cellMetrics.cellWidth));
+      const row = Math.max(0, Math.floor(y / cellMetrics.cellHeight));
+      return { row, col };
+    }
+    function modifiersOf(e) {
+      return {
+        ctrl: e.ctrlKey || e.metaKey,
+        alt: e.altKey,
+        shift: e.shiftKey
+      };
     }
     function sendResize() {
+      if (!cellMetrics) cellMetrics = measureCell();
       const rect = opts.host.getBoundingClientRect();
-      const cols = Math.max(40, Math.floor(rect.width / 9));
-      const rows = Math.max(8, Math.floor(rect.height / 18));
+      const cols = Math.max(40, Math.floor(rect.width / cellMetrics.cellWidth));
+      const rows = Math.max(8, Math.floor(rect.height / cellMetrics.cellHeight));
       send({ kind: "resize", cols, rows });
     }
     opts.host.tabIndex = 0;
-    opts.host.addEventListener("click", () => opts.host.focus());
+    opts.host.style.cursor = "text";
+    opts.host.addEventListener("pointerdown", () => opts.host.focus());
     opts.host.addEventListener("keydown", (e) => {
-      const data = encodeKey(e);
-      if (data !== null) {
-        e.preventDefault();
-        sendInput(data);
-      }
+      if (isBrowserReservedShortcut(e)) return;
+      if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
+      e.preventDefault();
+      send({ kind: "key", key: e.key, modifiers: modifiersOf(e) });
     });
     opts.host.addEventListener("paste", (e) => {
       const text = e.clipboardData?.getData("text") ?? "";
       if (text) {
         e.preventDefault();
-        sendInput(text);
+        send({ kind: "paste", data: text });
       }
     });
+    opts.host.addEventListener("mousedown", (e) => {
+      if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+      const { row, col } = pointToCell(e.clientX, e.clientY);
+      send({
+        kind: "mouse",
+        type: "down",
+        button: ["left", "middle", "right"][e.button] ?? "left",
+        row,
+        col,
+        modifiers: modifiersOf(e)
+      });
+    });
+    opts.host.addEventListener("mouseup", (e) => {
+      if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+      const { row, col } = pointToCell(e.clientX, e.clientY);
+      send({
+        kind: "mouse",
+        type: "up",
+        button: ["left", "middle", "right"][e.button] ?? "left",
+        row,
+        col,
+        modifiers: modifiersOf(e)
+      });
+    });
+    opts.host.addEventListener("click", (e) => {
+      const { row, col } = pointToCell(e.clientX, e.clientY);
+      send({
+        kind: "mouse",
+        type: "click",
+        button: "left",
+        row,
+        col,
+        modifiers: modifiersOf(e)
+      });
+    });
+    opts.host.addEventListener(
+      "wheel",
+      (e) => {
+        e.preventDefault();
+        const { row, col } = pointToCell(e.clientX, e.clientY);
+        const direction = e.deltaY > 0 ? "down" : "up";
+        send({
+          kind: "wheel",
+          direction,
+          row,
+          col,
+          modifiers: modifiersOf(e)
+        });
+      },
+      { passive: false }
+    );
     let resizeRaf = 0;
     const resizeObs = new ResizeObserver(() => {
+      cellMetrics = null;
       cancelAnimationFrame(resizeRaf);
       resizeRaf = requestAnimationFrame(sendResize);
     });
@@ -627,6 +707,17 @@ var __loomTerminalBoot = (() => {
       }
     };
   };
+  function isBrowserReservedShortcut(e) {
+    if (e.key === "F5" || e.key === "F11" || e.key === "F12") return true;
+    if ((e.ctrlKey || e.metaKey) && e.key === "Tab") return true;
+    if (e.altKey && e.key === "F4") return true;
+    if (e.ctrlKey || e.metaKey) {
+      const k = (e.key || "").toLowerCase();
+      if (/^[twnrlfjh]$/.test(k)) return true;
+      if (/^[0=\-+]$/.test(k)) return true;
+    }
+    return false;
+  }
   function portalFrameToRiftGrid(frame) {
     if (!frame || typeof frame !== "object") return null;
     const f = frame;
@@ -643,48 +734,6 @@ var __loomTerminalBoot = (() => {
       return out;
     });
     return { cells, width, height };
-  }
-  function encodeKey(e) {
-    const k = e.key;
-    if (k === "Backspace") return "\x7F";
-    if (k === "Delete") return "\x1B[3~";
-    if (k === "Enter") return "\r";
-    if (k === "Tab") return "	";
-    if (k === "Escape") return "\x1B";
-    if (k === "ArrowUp") return "\x1B[A";
-    if (k === "ArrowDown") return "\x1B[B";
-    if (k === "ArrowRight") return "\x1B[C";
-    if (k === "ArrowLeft") return "\x1B[D";
-    if (k === "Home") return "\x1B[H";
-    if (k === "End") return "\x1B[F";
-    if (k === "PageUp") return "\x1B[5~";
-    if (k === "PageDown") return "\x1B[6~";
-    if (k.startsWith("F") && /^F\d{1,2}$/.test(k)) {
-      const n = Number(k.slice(1));
-      const map = {
-        1: "\x1BOP",
-        2: "\x1BOQ",
-        3: "\x1BOR",
-        4: "\x1BOS",
-        5: "\x1B[15~",
-        6: "\x1B[17~",
-        7: "\x1B[18~",
-        8: "\x1B[19~",
-        9: "\x1B[20~",
-        10: "\x1B[21~",
-        11: "\x1B[23~",
-        12: "\x1B[24~"
-      };
-      return map[n] ?? null;
-    }
-    if (e.ctrlKey && k.length === 1) {
-      const c = k.toLowerCase().charCodeAt(0);
-      if (c >= 97 && c <= 122) return String.fromCharCode(c - 96);
-      if (k === " ") return "\0";
-    }
-    if (k.length === 1 && !e.metaKey && !e.altKey) return k;
-    if (e.altKey && k.length === 1) return "\x1B" + k;
-    return null;
   }
 })();
 //# sourceMappingURL=terminal.js.map

@@ -2,23 +2,28 @@
 /// <reference lib="dom.iterable" />
 /**
  * Loom terminal client — bundled to dist/vendor/terminal.js at build time
- * and served by the daemon under /__loom/vendor/terminal.js. Composes
- * @celestial/rift's browser-side cell-grid renderer with a WebSocket bridge
- * back to the loom daemon's claude PTY session.
+ * and served by the daemon under /__loom/vendor/terminal.js.
+ *
+ * The browser-side responsibilities are intentionally thin: render the cell
+ * grids via `@celestial/rift.createTerminal`, send raw key/mouse/wheel
+ * events to the daemon. The daemon owns all PTY-protocol encoding so we
+ * can compose `@celestial/lens.normalizeBrowserMirrorKey` +
+ * `@celestial/lens.mouseSequence` instead of reimplementing them here.
  *
  * Server protocol (recap):
  *   incoming:  { kind: "hello",  cols, rows, pid }
- *              { kind: "frame",  frame: TerminalFrame }   (≥1 per data tick)
- *              { kind: "exit",   code }                   (PTY exited)
+ *              { kind: "frame",  frame: TerminalFrame }
+ *              { kind: "exit",   code }
  *              { kind: "error",  message }
- *   outgoing:  { kind: "input",  data }                   (keystrokes)
- *              { kind: "resize", cols, rows }             (on container resize)
+ *   outgoing:  { kind: "key",    key, modifiers: { ctrl, alt, shift } }
+ *              { kind: "mouse",  type: 'click'|'down'|'up'|'move',
+ *                                button, row, col, modifiers }
+ *              { kind: "wheel",  direction: 'up'|'down', row, col, modifiers }
+ *              { kind: "resize", cols, rows }
+ *              { kind: "paste",  data }
  *
  * Exposed as a small global on window:
  *   window.__loomTerminal({ wsUrl, host, onStatus? })
- *     - host:    HTMLElement to mount the terminal into
- *     - wsUrl:   ws://...:5174/api/loom/terminal/ws?projectId=...
- *     - onStatus optional callback for status transitions
  */
 
 import { createTerminal, injectRiftStyles } from "@celestial/rift";
@@ -29,6 +34,11 @@ interface BootOptions {
   host: HTMLElement;
   wsUrl: string;
   onStatus?: (s: StatusKind, detail?: string) => void;
+}
+
+interface CellMetrics {
+  cellWidth: number;
+  cellHeight: number;
 }
 
 declare global {
@@ -45,6 +55,7 @@ window.__loomTerminal = (opts: BootOptions) => {
   let ws: WebSocket | null = null;
   let alive = true;
   let reconnectAttempt = 0;
+  let cellMetrics: CellMetrics | null = null;
 
   function connect(): void {
     status("connecting");
@@ -68,7 +79,7 @@ window.__loomTerminal = (opts: BootOptions) => {
           try {
             term.write(grid as never);
           } catch {
-            // ignore render errors so the WS keeps streaming
+            // ignore render errors; WS keeps streaming
           }
         }
       } else if (msg.kind === "exit") {
@@ -92,41 +103,138 @@ window.__loomTerminal = (opts: BootOptions) => {
     if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify(message));
   }
 
-  function sendInput(data: string): void {
-    send({ kind: "input", data });
+  function measureCell(): CellMetrics {
+    // Rift renders rows as .rift-row elements containing cells. Measure the
+    // first rendered row to get the cell width + height in CSS pixels.
+    const row = opts.host.querySelector<HTMLElement>(".rift-row");
+    if (row) {
+      const span = row.querySelector<HTMLElement>("span");
+      if (span) {
+        return {
+          cellWidth: Math.max(1, span.getBoundingClientRect().width),
+          cellHeight: Math.max(1, row.getBoundingClientRect().height),
+        };
+      }
+    }
+    // Fallback before the first frame paints — match rift defaults.
+    return { cellWidth: 9, cellHeight: 18 };
+  }
+
+  function pointToCell(clientX: number, clientY: number): { row: number; col: number } {
+    if (!cellMetrics) cellMetrics = measureCell();
+    const rect = opts.host.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top + opts.host.scrollTop;
+    const col = Math.max(0, Math.floor(x / cellMetrics.cellWidth));
+    const row = Math.max(0, Math.floor(y / cellMetrics.cellHeight));
+    return { row, col };
+  }
+
+  function modifiersOf(e: KeyboardEvent | MouseEvent | WheelEvent): {
+    ctrl?: boolean;
+    alt?: boolean;
+    shift?: boolean;
+  } {
+    return {
+      ctrl: e.ctrlKey || e.metaKey,
+      alt: e.altKey,
+      shift: e.shiftKey,
+    };
   }
 
   function sendResize(): void {
+    if (!cellMetrics) cellMetrics = measureCell();
     const rect = opts.host.getBoundingClientRect();
-    // Heuristic: rift draws a fixed character box roughly 9px wide × 18px tall.
-    // Could be measured precisely via getComputedStyle, but this is enough to
-    // keep claude's output legible at common widths.
-    const cols = Math.max(40, Math.floor(rect.width / 9));
-    const rows = Math.max(8, Math.floor(rect.height / 18));
+    const cols = Math.max(40, Math.floor(rect.width / cellMetrics.cellWidth));
+    const rows = Math.max(8, Math.floor(rect.height / cellMetrics.cellHeight));
     send({ kind: "resize", cols, rows });
   }
 
-  // Keystrokes
+  // Focus + keystrokes
   opts.host.tabIndex = 0;
-  opts.host.addEventListener("click", () => opts.host.focus());
+  opts.host.style.cursor = "text";
+  opts.host.addEventListener("pointerdown", () => opts.host.focus());
   opts.host.addEventListener("keydown", (e) => {
-    const data = encodeKey(e);
-    if (data !== null) {
-      e.preventDefault();
-      sendInput(data);
-    }
+    if (isBrowserReservedShortcut(e)) return;
+    // Some keystrokes are pure-modifier or pure-IME; let the server decide via
+    // normalizeBrowserMirrorKey, but skip the obvious no-ops to avoid spam.
+    if (e.key === "Shift" || e.key === "Control" || e.key === "Alt" || e.key === "Meta") return;
+    e.preventDefault();
+    send({ kind: "key", key: e.key, modifiers: modifiersOf(e) });
   });
+
+  // Paste
   opts.host.addEventListener("paste", (e) => {
     const text = e.clipboardData?.getData("text") ?? "";
     if (text) {
       e.preventDefault();
-      sendInput(text);
+      send({ kind: "paste", data: text });
     }
   });
+
+  // Mouse — only forwarded to PTY when in mouse-tracking mode; the server
+  // does the gating because it knows the mode (from frame.capabilities).
+  // We always send; the server drops them if mouse-tracking is off.
+  opts.host.addEventListener("mousedown", (e) => {
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+    const { row, col } = pointToCell(e.clientX, e.clientY);
+    send({
+      kind: "mouse",
+      type: "down",
+      button: ["left", "middle", "right"][e.button] ?? "left",
+      row,
+      col,
+      modifiers: modifiersOf(e),
+    });
+  });
+  opts.host.addEventListener("mouseup", (e) => {
+    if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;
+    const { row, col } = pointToCell(e.clientX, e.clientY);
+    send({
+      kind: "mouse",
+      type: "up",
+      button: ["left", "middle", "right"][e.button] ?? "left",
+      row,
+      col,
+      modifiers: modifiersOf(e),
+    });
+  });
+  opts.host.addEventListener("click", (e) => {
+    const { row, col } = pointToCell(e.clientX, e.clientY);
+    send({
+      kind: "mouse",
+      type: "click",
+      button: "left",
+      row,
+      col,
+      modifiers: modifiersOf(e),
+    });
+  });
+
+  // Wheel — always send to server. Server checks mouse-tracking and either
+  // forwards as scroll-mouse-sequence or pans its own scrollback view.
+  opts.host.addEventListener(
+    "wheel",
+    (e) => {
+      e.preventDefault();
+      const { row, col } = pointToCell(e.clientX, e.clientY);
+      // Trackpads send small deltas — collapse to discrete direction.
+      const direction = e.deltaY > 0 ? "down" : "up";
+      send({
+        kind: "wheel",
+        direction,
+        row,
+        col,
+        modifiers: modifiersOf(e),
+      });
+    },
+    { passive: false },
+  );
 
   // Container resize → notify the daemon
   let resizeRaf = 0;
   const resizeObs = new ResizeObserver(() => {
+    cellMetrics = null; // re-measure after layout changes
     cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(sendResize);
   });
@@ -150,13 +258,28 @@ window.__loomTerminal = (opts: BootOptions) => {
   };
 };
 
+/** Browser shortcuts the OS / browser owns — don't intercept these. */
+function isBrowserReservedShortcut(e: KeyboardEvent): boolean {
+  if (e.key === "F5" || e.key === "F11" || e.key === "F12") return true;
+  if ((e.ctrlKey || e.metaKey) && e.key === "Tab") return true;
+  if (e.altKey && e.key === "F4") return true;
+  if (e.ctrlKey || e.metaKey) {
+    const k = (e.key || "").toLowerCase();
+    // browser-owned chord keys (new tab, close, reload, find, address bar, etc.)
+    if (/^[twnrlfjh]$/.test(k)) return true;
+    if (/^[0=\-+]$/.test(k)) return true;
+  }
+  return false;
+}
+
 /**
  * Convert a portal `TerminalFrame` into a rift `CellGrid`. Their `Cell` and
- * `StyleAttrs` types are structurally identical so the conversion is mostly
- * a shape change: portal's `{ buffers: { main: { grid: Cell[][] } } }` →
- * rift's `{ cells, width, height }` plus filling undefined cells with spaces.
+ * `StyleAttrs` types are structurally identical — see frame.ts in portal and
+ * types.ts in rift — so the conversion is mostly a shape change.
  */
-function portalFrameToRiftGrid(frame: unknown): { cells: unknown[][]; width: number; height: number } | null {
+function portalFrameToRiftGrid(
+  frame: unknown,
+): { cells: unknown[][]; width: number; height: number } | null {
   if (!frame || typeof frame !== "object") return null;
   const f = frame as {
     activeBuffer?: "main" | "alternate";
@@ -178,49 +301,4 @@ function portalFrameToRiftGrid(frame: unknown): { cells: unknown[][]; width: num
     return out;
   });
   return { cells, width, height };
-}
-
-/** Translate a KeyboardEvent into the bytes a terminal expects. */
-function encodeKey(e: KeyboardEvent): string | null {
-  const k = e.key;
-  if (k === "Backspace") return "\x7f";
-  if (k === "Delete") return "\x1b[3~";
-  if (k === "Enter") return "\r";
-  if (k === "Tab") return "\t";
-  if (k === "Escape") return "\x1b";
-  if (k === "ArrowUp") return "\x1b[A";
-  if (k === "ArrowDown") return "\x1b[B";
-  if (k === "ArrowRight") return "\x1b[C";
-  if (k === "ArrowLeft") return "\x1b[D";
-  if (k === "Home") return "\x1b[H";
-  if (k === "End") return "\x1b[F";
-  if (k === "PageUp") return "\x1b[5~";
-  if (k === "PageDown") return "\x1b[6~";
-  if (k.startsWith("F") && /^F\d{1,2}$/.test(k)) {
-    // Function keys — Fn → ESC OP / OQ / ... for F1-F4, ESC[NN~ for F5+
-    const n = Number(k.slice(1));
-    const map: Record<number, string> = {
-      1: "\x1bOP",
-      2: "\x1bOQ",
-      3: "\x1bOR",
-      4: "\x1bOS",
-      5: "\x1b[15~",
-      6: "\x1b[17~",
-      7: "\x1b[18~",
-      8: "\x1b[19~",
-      9: "\x1b[20~",
-      10: "\x1b[21~",
-      11: "\x1b[23~",
-      12: "\x1b[24~",
-    };
-    return map[n] ?? null;
-  }
-  if (e.ctrlKey && k.length === 1) {
-    const c = k.toLowerCase().charCodeAt(0);
-    if (c >= 97 && c <= 122) return String.fromCharCode(c - 96); // Ctrl-A..Ctrl-Z
-    if (k === " ") return "\x00";
-  }
-  if (k.length === 1 && !e.metaKey && !e.altKey) return k;
-  if (e.altKey && k.length === 1) return "\x1b" + k;
-  return null;
 }

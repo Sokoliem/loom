@@ -23,6 +23,9 @@ importers:
       '@celestial/rift':
         specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift
         version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift
+      '@celestial/telescope':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/telescope
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/telescope
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0

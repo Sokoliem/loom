@@ -68318,13 +68318,14 @@ async function bootSession(project) {
     }
     removeData();
   });
-  return {
+  const session = {
     projectId: project.id,
     runtime,
     screen,
     cols,
     rows,
     startedAt: Date.now(),
+    scrollOffset: 0,
     onFrame(cb) {
       frameListeners.add(cb);
       return () => frameListeners.delete(cb);
@@ -68332,8 +68333,12 @@ async function bootSession(project) {
     onExit(cb) {
       exitListeners.add(cb);
       return () => exitListeners.delete(cb);
+    },
+    getCurrentFrame() {
+      return session.scrollOffset > 0 ? session.screen.getScrolledFrame(session.scrollOffset) : session.screen.getFrame();
     }
   };
+  return session;
 }
 async function sessionStatusAsync(projectId) {
   const p = sessions.get(projectId);
@@ -68350,30 +68355,41 @@ async function sessionStatusAsync(projectId) {
 
 // src/pty/mirror.ts
 init_esm_shims();
+import {
+  mouseSequence,
+  normalizeBrowserMirrorKey
+} from "@celestial/lens";
+import { keyToBuffer } from "@celestial/telescope";
 function attachMirror(session, ws, opts = {}) {
   const flushMs = opts.flushIntervalMs ?? 30;
-  send({ kind: "hello", cols: session.cols, rows: session.rows, pid: session.runtime.ptyHandle.pid });
-  send({ kind: "frame", frame: session.screen.getFrame() });
-  let pending = false;
-  let timer = null;
   function send(message) {
     try {
       ws.send(JSON.stringify(message));
     } catch {
     }
   }
+  function emitFrame() {
+    send({ kind: "frame", frame: session.getCurrentFrame() });
+  }
+  send({ kind: "hello", cols: session.cols, rows: session.rows, pid: session.runtime.ptyHandle.pid });
+  emitFrame();
+  let pending = false;
+  let timer = null;
   function flush() {
     timer = null;
     if (!pending) return;
     pending = false;
-    send({ kind: "frame", frame: session.screen.getFrame() });
+    emitFrame();
   }
   function schedule() {
     pending = true;
     if (timer) return;
     timer = setTimeout(flush, flushMs);
   }
-  const unsubFrame = session.onFrame(schedule);
+  const unsubFrame = session.onFrame(() => {
+    if (session.scrollOffset > 0) session.scrollOffset = 0;
+    schedule();
+  });
   const unsubExit = session.onExit((code) => {
     send({ kind: "exit", code });
   });
@@ -68386,17 +68402,7 @@ function attachMirror(session, ws, opts = {}) {
     } catch {
       return;
     }
-    if (msg.kind === "input" && typeof msg.data === "string") {
-      session.runtime.ptyHandle.write(msg.data);
-    } else if (msg.kind === "resize" && typeof msg.cols === "number" && typeof msg.rows === "number") {
-      const cols = Math.max(20, Math.min(500, Math.round(msg.cols)));
-      const rows = Math.max(5, Math.min(200, Math.round(msg.rows)));
-      session.runtime.ptyHandle.resize(cols, rows);
-      session.screen.resize(cols, rows);
-      session.cols = cols;
-      session.rows = rows;
-      send({ kind: "frame", frame: session.screen.getFrame() });
-    }
+    handleClientMessage(session, msg, emitFrame);
   });
   ws.on("close", () => {
     if (timer) clearTimeout(timer);
@@ -68408,6 +68414,77 @@ function attachMirror(session, ws, opts = {}) {
     unsubFrame();
     unsubExit();
   };
+}
+function handleClientMessage(session, msg, emitFrame) {
+  const pty = session.runtime.ptyHandle;
+  const frame = session.screen.getFrame();
+  const mouseTracking = frame.capabilities.mouseTracking;
+  switch (msg.kind) {
+    case "key": {
+      if (typeof msg.key !== "string") return;
+      const normalized = normalizeBrowserMirrorKey(msg.key, msg.modifiers ?? {});
+      if (!normalized) return;
+      const buf = keyToBuffer(normalized, msg.modifiers ?? {});
+      if (buf && buf.length > 0) pty.write(buf.toString("utf8"));
+      return;
+    }
+    case "paste": {
+      if (typeof msg.data === "string" && msg.data.length > 0) pty.write(msg.data);
+      return;
+    }
+    case "mouse": {
+      if (!mouseTracking) return;
+      if (typeof msg.row !== "number" || typeof msg.col !== "number") return;
+      const type = msg.type;
+      if (type !== "click" && type !== "down" && type !== "up" && type !== "move") return;
+      const seq = mouseSequence({
+        type,
+        row: msg.row,
+        col: msg.col,
+        button: msg.button ?? "left",
+        modifiers: msg.modifiers
+      });
+      if (seq) pty.write(seq);
+      return;
+    }
+    case "wheel": {
+      if (msg.direction !== "up" && msg.direction !== "down") return;
+      if (typeof msg.row !== "number" || typeof msg.col !== "number") return;
+      if (mouseTracking) {
+        const seq = mouseSequence({
+          type: "scroll",
+          row: msg.row,
+          col: msg.col,
+          direction: msg.direction,
+          modifiers: msg.modifiers
+        });
+        if (seq) pty.write(seq);
+      } else {
+        const step = 3;
+        const before = session.scrollOffset;
+        const max = session.screen.getScrollbackLength();
+        session.scrollOffset = msg.direction === "up" ? Math.min(max, before + step) : Math.max(0, before - step);
+        if (session.scrollOffset !== before) emitFrame();
+      }
+      return;
+    }
+    case "resize": {
+      if (typeof msg.cols !== "number" || typeof msg.rows !== "number") return;
+      const cols = Math.max(20, Math.min(500, Math.round(msg.cols)));
+      const rows = Math.max(5, Math.min(200, Math.round(msg.rows)));
+      pty.resize(cols, rows);
+      session.screen.resize(cols, rows);
+      session.cols = cols;
+      session.rows = rows;
+      emitFrame();
+      return;
+    }
+    // legacy "input" — still supported for backward compatibility
+    case "input": {
+      if (typeof msg.data === "string") pty.write(msg.data);
+      return;
+    }
+  }
 }
 
 // src/daemon.ts
@@ -68758,7 +68835,7 @@ function clearRunFiles() {
   }
 }
 function pkgVersion() {
-  return process.env.LOOM_VERSION ?? "0.9.3";
+  return process.env.LOOM_VERSION ?? "0.9.4";
 }
 function ensureDaemonSecret() {
   const path2 = join10(serverDir(), "secret");

@@ -1,5 +1,5 @@
 import { createClaudeRuntime, type ClaudeSessionRuntime } from "@celestial/forge";
-import { PtyScreenBuffer } from "@celestial/lens";
+import { PtyScreenBuffer, type TerminalFrame } from "@celestial/lens";
 import type { ProjectRecord } from "../types.js";
 
 const DEFAULT_COLS = 100;
@@ -12,8 +12,20 @@ export interface ClaudeSession {
   cols: number;
   rows: number;
   startedAt: number;
+  /**
+   * Mirror-side scrollback offset in rows (0 = live tail). Updated by wheel
+   * messages when the PTY's mouse-tracking mode is OFF; resets when new
+   * output arrives that would otherwise lose the scroll position.
+   */
+  scrollOffset: number;
   onFrame: (cb: () => void) => () => void;
   onExit: (cb: (exitCode: number | null) => void) => () => void;
+  /**
+   * Compute the current frame respecting scrollOffset. Composes
+   * `PtyScreenBuffer.getScrolledFrame` from @celestial/lens (re-exported
+   * from @celestial/portal).
+   */
+  getCurrentFrame: () => TerminalFrame;
 }
 
 const sessions = new Map<string, Promise<ClaudeSession>>();
@@ -105,13 +117,14 @@ async function bootSession(project: ProjectRecord): Promise<ClaudeSession> {
     removeData();
   });
 
-  return {
+  const session: ClaudeSession = {
     projectId: project.id,
     runtime,
     screen,
     cols,
     rows,
     startedAt: Date.now(),
+    scrollOffset: 0,
     onFrame(cb) {
       frameListeners.add(cb);
       return () => frameListeners.delete(cb);
@@ -120,7 +133,13 @@ async function bootSession(project: ProjectRecord): Promise<ClaudeSession> {
       exitListeners.add(cb);
       return () => exitListeners.delete(cb);
     },
+    getCurrentFrame() {
+      return session.scrollOffset > 0
+        ? session.screen.getScrolledFrame(session.scrollOffset)
+        : session.screen.getFrame();
+    },
   };
+  return session;
 }
 
 export function sessionStatus(projectId: string): {
