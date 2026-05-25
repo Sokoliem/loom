@@ -19,9 +19,6 @@
     "vite",
     "claude-code"
   ],
-  "commands": "./commands",
-  "agents": "./agents",
-  "skills": "./skills",
   "mcpServers": {
     "loom-tools": {
       "command": "node",
