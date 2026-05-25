@@ -1,5 +1,6 @@
 import { execFileNoThrow } from "../utils/execFileNoThrow.js";
 import { projectCurrent } from "../core/project.js";
+import { readDaemonStatus } from "../mcp/daemon-control.js";
 
 export interface DoctorCheck {
   name: string;
@@ -60,12 +61,61 @@ export async function runDoctor(): Promise<{ overall: "green" | "yellow" | "red"
   }
   checks.push({ name: "axe-core", status: axeStatus, message: axeMessage });
 
+  // Vite (required for studio preview as of 0.9.2)
+  let viteStatus: DoctorCheck["status"] = "red";
+  let viteMessage = "vite not installed — studio preview will not work";
+  let viteHint: string | undefined = "the plugin's first-run bootstrap should have installed it; try reinstalling the plugin";
+  try {
+    const mod: { version?: string } = await import("vite");
+    viteStatus = "green";
+    viteMessage = `vite present${mod.version ? ` (${mod.version})` : ""}`;
+    viteHint = undefined;
+  } catch {
+    // red — studio depends on vite
+  }
+  checks.push({ name: "vite", status: viteStatus, message: viteMessage, hint: viteHint });
+
+  // React + plugin-react (required by studio runtime)
+  let reactStatus: DoctorCheck["status"] = "red";
+  let reactMessage = "react / @vitejs/plugin-react missing — studio preview will not render";
+  try {
+    await import("react");
+    await import("@vitejs/plugin-react");
+    reactStatus = "green";
+    reactMessage = "react + @vitejs/plugin-react present";
+  } catch {
+    // red
+  }
+  checks.push({ name: "react", status: reactStatus, message: reactMessage });
+
+  // better-sqlite3 native binding (required for project metadata)
+  let sqliteStatus: DoctorCheck["status"] = "red";
+  let sqliteMessage = "better-sqlite3 native binding missing — project DB will not open";
+  try {
+    await import("better-sqlite3");
+    sqliteStatus = "green";
+    sqliteMessage = "better-sqlite3 binding present";
+  } catch (err) {
+    sqliteMessage = `better-sqlite3 load failed: ${(err as Error).message}`;
+  }
+  checks.push({ name: "better-sqlite3", status: sqliteStatus, message: sqliteMessage });
+
   // Project health
   const cur = projectCurrent();
   checks.push({
     name: "current-project",
     status: cur ? "green" : "yellow",
     message: cur ? `${cur.name} (${cur.path})` : "no project open — run project_create or project_open",
+  });
+
+  // Daemon status
+  const daemon = readDaemonStatus();
+  checks.push({
+    name: "daemon",
+    status: daemon.running ? "green" : "yellow",
+    message: daemon.running
+      ? `daemon running pid=${daemon.pid} url=${daemon.url}`
+      : "daemon not running — call daemon_start or run /loom:start",
   });
 
   const overall = aggregate(checks);

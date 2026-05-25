@@ -9,3 +9,11 @@ coverage/
 loom-plugin.zip
 loom-plugin.plugin
 .loom/
+.playwright-mcp/
+.daemon-err.log
+.daemon-out.log
+# scratch test projects + screenshots
+test2/
+test-project*/
+studio-*.png
+

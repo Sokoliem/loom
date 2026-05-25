@@ -1,14 +1,16 @@
 ---
 description: Start the loom daemon (HTTP + WS) and open the studio in the browser
-allowed-tools: ["mcp__loom-tools__server_status", "mcp__loom-tools__stage_url", "Bash"]
+allowed-tools: ["mcp__loom-tools__daemon_start", "mcp__loom-tools__server_status", "mcp__loom-tools__stage_url"]
 ---
 
-Start the loom daemon if not already running, then return the studio URL.
+Start the loom daemon if not already running, then surface the studio URL.
 
-1. Call `mcp__loom-tools__server_status` to check if a project is open.
-2. If no daemon process is detected (no entry in ~/.loom/server/pid), instruct the user:
-   - `pnpm dlx loom start` (or `npx loom start`) — runs the daemon in the foreground.
-3. Call `mcp__loom-tools__stage_url` and surface the URL.
-4. Tell the user to open the URL in a browser (we do not auto-open; environments differ).
+1. Call `mcp__loom-tools__daemon_start`. This spawns the daemon detached and returns `{ running, pid, port, url }` once the run files appear (or throws if it didn't start within 6s).
+2. If a project is currently open, also call `mcp__loom-tools__stage_url` to surface the stage URL for the active project.
+3. Print both URLs and tell the user to open the daemon URL (or stage URL) in their browser. Do not auto-open — environments differ.
 
-Surface the daemon URL in the chat. If a project is open, also surface its stage URL.
+Output shape:
+- daemon URL: `http://127.0.0.1:<port>` (root redirects to the current project's stage if one is open)
+- stage URL (if project open): `http://127.0.0.1:<port>/loom/preview/<projectId>/`
+
+If `daemon_start` reports the daemon was already running, treat that as success — just surface the existing URLs.

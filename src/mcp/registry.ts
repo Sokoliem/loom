@@ -25,6 +25,7 @@ import { planPanelRun, ingestPanelFindings, recordPanelDecision } from "../panel
 import { forgeAbort, forgeRunList, forgeSquash, forgeStart, recordForgeIteration } from "../forge/index.js";
 import { reviewCreate, reviewGet, reviewList, reviewResolve } from "../reviews/index.js";
 import { runDoctor } from "../doctor/index.js";
+import { readDaemonStatus, startDaemonDetached, stopDaemonDetached } from "./daemon-control.js";
 
 export interface ToolDef<TSchema extends ZodTypeAny = ZodTypeAny> {
   name: string;
@@ -698,7 +699,22 @@ export function registerAllTools(): ToolRegistry {
     pid: process.pid,
     cwd: process.cwd(),
     project: projectCurrent(),
+    daemon: readDaemonStatus(),
   }));
+
+  r.add(
+    "daemon_start",
+    "Start the loom HTTP+WS daemon as a detached process. Returns the studio URL.",
+    z.object({}),
+    async () => startDaemonDetached(),
+  );
+
+  r.add(
+    "daemon_stop",
+    "Stop the running loom daemon (if any).",
+    z.object({}),
+    async () => stopDaemonDetached(),
+  );
 
   r.add(
     "stage_url",

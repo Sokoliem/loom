@@ -7,6 +7,9 @@ import { serverDir, serverPidPath, serverPortPath } from "./core/paths.js";
 import { startWatcher, type WatchEvent, type WatcherHandle } from "./core/watcher.js";
 import { projectCurrent, projectList, requireCurrent } from "./core/project.js";
 import { buildManifest, versionSnapshot } from "./core/version.js";
+import { routeList } from "./core/routes.js";
+import { ensureStudio, fullReload, stopAllStudios } from "./studio/server.js";
+import { renderStudioChrome } from "./studio/chrome.js";
 
 const DEFAULT_PORT = Number(process.env.LOOM_PORT ?? 5174);
 
@@ -71,6 +74,14 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
           // ignore — partial states during edit storms
         }
       }
+      // Token changes don't go through the Vite module graph, so push a full
+      // reload at the studio iframe. Vite handles route/component HMR itself.
+      const path = (ev as { path?: string }).path ?? "";
+      if (/[\\/]tokens[\\/]/.test(path)) {
+        const proj = projectList().find((p) => p.path === projectDir);
+        if (proj) fullReload(proj.id);
+        broadcast({ kind: "token_changed", projectDir, path });
+      }
       broadcast({ projectDir, ...ev });
     });
     watchers.set(projectDir, handle);
@@ -133,6 +144,56 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
     }
   });
 
+  /**
+   * Studio chrome — the page the user sees in their browser. Lazy-boots a Vite
+   * dev server for the project, renders the wrapper HTML with viewport/theme/
+   * route controls, and iframes the Vite-served preview.
+   */
+  app.get<{ Params: { projectId: string } }>(
+    "/loom/preview/:projectId/",
+    async (req, reply) => {
+      const proj = projectList().find((p) => p.id === req.params.projectId);
+      if (!proj) {
+        reply.code(404);
+        return reply.type("text/html").send(htmlError("Project not found", req.params.projectId));
+      }
+      ensureWatch(proj.path);
+      try {
+        const studio = await ensureStudio(proj);
+        const routes = routeList(proj.path).map((r) => ({ path: r.path }));
+        const html = renderStudioChrome({
+          project: proj,
+          vitePort: studio.port,
+          daemonPort: boundPort,
+          routes,
+        });
+        return reply.type("text/html").send(html);
+      } catch (err: unknown) {
+        reply.code(500);
+        return reply.type("text/html").send(htmlError("Studio boot failed", (err as Error).message));
+      }
+    },
+  );
+
+  /** Redirect a trailing-slash-less variant to the canonical URL. */
+  app.get<{ Params: { projectId: string } }>(
+    "/loom/preview/:projectId",
+    async (req, reply) => reply.redirect(`/loom/preview/${req.params.projectId}/`, 302),
+  );
+
+  /** Root path — show project picker or redirect to the only/current project. */
+  app.get("/", async (_req, reply) => {
+    const projects = projectList();
+    const current = projectCurrent();
+    if (current) {
+      return reply.redirect(`/loom/preview/${current.id}/`, 302);
+    }
+    if (projects.length === 1) {
+      return reply.redirect(`/loom/preview/${projects[0]!.id}/`, 302);
+    }
+    return reply.type("text/html").send(renderProjectIndex(projects));
+  });
+
   app.register(async (instance) => {
     instance.get("/api/loom/ws", { websocket: true }, (connection) => {
       const send = (data: string) => connection.send(data);
@@ -192,10 +253,38 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
         }
       }
       sockets.clear();
+      await stopAllStudios();
       await app.close();
       clearRunFiles();
     },
   };
+}
+
+function htmlError(title: string, detail: string): string {
+  const esc = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  return `<!doctype html><html><head><title>loom — ${esc(title)}</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;padding:32px;max-width:640px;color:#111}
+h1{margin:0 0 8px;font-size:18px}.detail{background:#f6f6f8;padding:12px;border-radius:6px;font-family:ui-monospace,monospace;font-size:12px}</style>
+</head><body><h1>${esc(title)}</h1><div class="detail">${esc(detail)}</div></body></html>`;
+}
+
+function renderProjectIndex(projects: ReturnType<typeof projectList>): string {
+  const esc = (s: string) =>
+    s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  const rows = projects
+    .map(
+      (p) =>
+        `<li><a href="/loom/preview/${esc(p.id)}/"><strong>${esc(p.name)}</strong><span>${esc(p.path)}</span></a></li>`,
+    )
+    .join("");
+  const empty = projects.length === 0 ? "<p>No projects yet. Run <code>/loom:new &lt;name&gt;</code>.</p>" : "";
+  return `<!doctype html><html><head><title>loom</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;padding:32px;max-width:720px;color:#111}
+h1{font-size:22px;margin:0 0 16px}ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+li a{display:flex;flex-direction:column;gap:2px;padding:12px 14px;background:#f6f6f8;border-radius:8px;text-decoration:none;color:inherit}
+li a:hover{background:#eee}li span{font-size:11.5px;color:#666;font-family:ui-monospace,monospace}</style>
+</head><body><h1>loom · projects</h1>${empty}<ul>${rows}</ul></body></html>`;
 }
 
 function ensureSingleton(): void {
@@ -236,7 +325,7 @@ function clearRunFiles(): void {
 }
 
 function pkgVersion(): string {
-  return process.env.LOOM_VERSION ?? "0.9.0";
+  return process.env.LOOM_VERSION ?? "0.9.2";
 }
 
 function ensureDaemonSecret(): string {
@@ -260,7 +349,7 @@ function tokenEquals(a: string, b: string): boolean {
   }
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (isMainModule(import.meta.url, process.argv[1])) {
   startDaemon().then((h) => {
     process.stderr.write(`loom daemon listening on ${h.url}\n`);
     const stop = async () => {
@@ -273,4 +362,18 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     process.stderr.write(`loom daemon failed: ${err.message}\n`);
     process.exit(1);
   });
+}
+
+/** Cross-platform `is-main-module` — Windows path separators + drive letters can
+ *  defeat the naïve `import.meta.url === 'file://' + argv[1]` comparison. */
+function isMainModule(metaUrl: string, argv1: string | undefined): boolean {
+  if (!argv1) return false;
+  try {
+    const url = new URL(metaUrl);
+    const argUrl = new URL(`file://${argv1.replace(/\\/g, "/")}`);
+    return url.pathname.replace(/^\/+/, "").toLowerCase() ===
+      argUrl.pathname.replace(/^\/+/, "").toLowerCase();
+  } catch {
+    return false;
+  }
 }

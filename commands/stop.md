@@ -1,8 +1,9 @@
 ---
 description: Stop the loom daemon
+allowed-tools: ["mcp__loom-tools__daemon_stop"]
 ---
 
-Tell the user to stop the daemon by sending SIGINT/SIGTERM (Ctrl-C) to the `loom start`
-process. The daemon writes its pid to `~/.loom/server/pid` if they need to find it.
+Stop the running loom daemon (and any per-project Vite dev servers it owns).
 
-No tool call required from Claude.
+1. Call `mcp__loom-tools__daemon_stop`. It sends SIGTERM to the daemon PID recorded in `~/.loom/server/pid`.
+2. Report whether the daemon was running. If it wasn't, that's fine — just say so.

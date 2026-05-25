@@ -30,18 +30,18 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// node_modules/tsup/assets/esm_shims.js
+// node_modules/.pnpm/tsup@8.5.1_postcss@8.5.15_typescript@5.9.3_yaml@2.9.0/node_modules/tsup/assets/esm_shims.js
 import path from "path";
 import { fileURLToPath } from "url";
 var init_esm_shims = __esm({
-  "node_modules/tsup/assets/esm_shims.js"() {
+  "node_modules/.pnpm/tsup@8.5.1_postcss@8.5.15_typescript@5.9.3_yaml@2.9.0/node_modules/tsup/assets/esm_shims.js"() {
     "use strict";
   }
 });
 
-// node_modules/@babel/parser/lib/index.js
+// node_modules/.pnpm/@babel+parser@7.29.7/node_modules/@babel/parser/lib/index.js
 var require_lib = __commonJS({
-  "node_modules/@babel/parser/lib/index.js"(exports) {
+  "node_modules/.pnpm/@babel+parser@7.29.7/node_modules/@babel/parser/lib/index.js"(exports) {
     "use strict";
     init_esm_shims();
     Object.defineProperty(exports, "__esModule", {
@@ -14620,10 +14620,10 @@ init_esm_shims();
 import { readFileSync } from "fs";
 import { relative } from "path";
 
-// node_modules/magic-string/dist/magic-string.es.mjs
+// node_modules/.pnpm/magic-string@0.30.21/node_modules/magic-string/dist/magic-string.es.mjs
 init_esm_shims();
 
-// node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.mjs
+// node_modules/.pnpm/@jridgewell+sourcemap-codec@1.5.5/node_modules/@jridgewell/sourcemap-codec/dist/sourcemap-codec.mjs
 init_esm_shims();
 var comma = ",".charCodeAt(0);
 var semicolon = ";".charCodeAt(0);
@@ -14706,7 +14706,7 @@ function encode(decoded) {
   return writer.flush();
 }
 
-// node_modules/magic-string/dist/magic-string.es.mjs
+// node_modules/.pnpm/magic-string@0.30.21/node_modules/magic-string/dist/magic-string.es.mjs
 var BitSet = class _BitSet {
   constructor(arg) {
     this.bits = arg instanceof _BitSet ? arg.bits.slice() : [];
