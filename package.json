@@ -1,0 +1,65 @@
+{
+  "name": "loom",
+  "version": "0.9.0",
+  "description": "Design workspace for Claude Code — chat-plus-stage workflow with tokens, components, routes, panel, forge, exports",
+  "license": "MIT",
+  "author": "Eric Sokolowski",
+  "type": "module",
+  "main": "dist/daemon.js",
+  "bin": {
+    "loom": "dist/cli.js",
+    "loom-tools": "dist/mcp/server.js",
+    "loom-daemon": "dist/daemon.js"
+  },
+  "files": [
+    "dist",
+    ".claude-plugin",
+    "commands",
+    "agents",
+    "skills",
+    "templates",
+    "docs"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "mcp": "node dist/mcp/server.js",
+    "doctor": "node dist/cli.js doctor",
+    "package": "pnpm build && node scripts/package.js"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.3",
+    "@fastify/websocket": "^11.0.1",
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "acorn": "^8.14.0",
+    "acorn-jsx": "^5.3.2",
+    "acorn-walk": "^8.3.4",
+    "better-sqlite3": "^11.7.0",
+    "chokidar": "^4.0.1",
+    "fastify": "^5.1.0",
+    "magic-string": "^0.30.14",
+    "nanoid": "^5.0.9",
+    "ulid": "^2.3.0",
+    "ws": "^8.18.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.23.8"
+  },
+  "optionalDependencies": {
+    "axe-core": "^4.10.2",
+    "playwright": "^1.49.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@types/ws": "^8.5.13",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

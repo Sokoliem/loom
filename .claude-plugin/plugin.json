@@ -1,0 +1,31 @@
+{
+  "name": "loom",
+  "version": "0.9.0",
+  "description": "Design workspace for Claude Code: chat + stage + tokens + components + routes + panel + forge + exports. OAuth-only, local-first.",
+  "author": {
+    "name": "Eric Sokolowski",
+    "url": "https://github.com/erics/loom"
+  },
+  "homepage": "https://github.com/erics/loom",
+  "repository": "https://github.com/erics/loom",
+  "license": "MIT",
+  "keywords": [
+    "design",
+    "design-system",
+    "tokens",
+    "prototyping",
+    "react",
+    "shadcn",
+    "vite",
+    "claude-code"
+  ],
+  "commands": "./commands",
+  "agents": "./agents",
+  "skills": "./skills",
+  "mcpServers": {
+    "loom-tools": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server.js"]
+    }
+  }
+}

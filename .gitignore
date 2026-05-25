@@ -1,0 +1,11 @@
+node_modules/
+*.log
+.DS_Store
+.env
+.env.local
+*.tsbuildinfo
+coverage/
+.vitest-cache/
+loom-plugin.zip
+loom-plugin.plugin
+.loom/

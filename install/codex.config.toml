@@ -1,0 +1,6 @@
+# Add this snippet to your Codex CLI config (~/.codex/config.toml).
+# Replace the path with the absolute path to the built MCP server.
+
+[mcp_servers.loom-tools]
+command = "node"
+args = ["/ABSOLUTE/PATH/TO/loom/dist/mcp/server.js"]

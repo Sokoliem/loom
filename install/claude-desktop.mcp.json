@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "loom-tools": {
+      "command": "node",
+      "args": ["/ABSOLUTE/PATH/TO/loom/dist/mcp/server.js"],
+      "env": {}
+    }
+  }
+}
