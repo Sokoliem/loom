@@ -22,7 +22,7 @@
   "mcpServers": {
     "loom-tools": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/server.js"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/mcp/bootstrap.js"]
     }
   }
 }

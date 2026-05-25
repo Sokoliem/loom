@@ -40,6 +40,8 @@ Once installed, `/loom:start`, `/loom:new`, `/loom:token`, `/loom:component`, `/
 `/loom:review`, and `/loom:doctor` are available.
 
 The plugin's `loom-tools` MCP server starts automatically with Claude Code.
+First start runs a one-time `npm install --omit=dev` in the plugin dir to fetch
+the native SQLite binding (30–90s). Subsequent starts are instant.
 
 ## B) Claude Desktop (MCP)
 
