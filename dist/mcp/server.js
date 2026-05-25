@@ -42619,6 +42619,39 @@ async function runDoctor() {
     status: daemon.running ? "green" : "yellow",
     message: daemon.running ? `daemon running pid=${daemon.pid} url=${daemon.url}` : "daemon not running \u2014 call daemon_start or run /loom:start"
   });
+  const celestial = [
+    { name: "@celestial/forge", hint: "PTY + claude session lifecycle" },
+    { name: "@celestial/lens", hint: "server-side screen buffer" },
+    { name: "@celestial/rift", hint: "browser-side terminal renderer" },
+    { name: "@celestial/beacon-browser", hint: "browser extension chunks" }
+  ];
+  for (const c of celestial) {
+    let ok = false;
+    let detail = "";
+    try {
+      const mod = await import(
+        /* @vite-ignore */
+        c.name
+      );
+      ok = !!mod;
+      detail = "present";
+    } catch (err) {
+      detail = err.message.split("\n")[0] ?? "load failed";
+    }
+    checks.push({
+      name: c.name,
+      status: ok ? "green" : "red",
+      message: ok ? `${c.hint} \u2014 ${detail}` : `${c.hint} \u2014 ${detail}`,
+      hint: ok ? void 0 : "ensure the Celestial worktree at C:/Development/celestial/.worktrees/claude-wrapper-rewire/ is built and linked"
+    });
+  }
+  const claude = await execFileNoThrow("claude", ["--version"]);
+  checks.push({
+    name: "claude",
+    status: claude.code === 0 ? "green" : "yellow",
+    message: claude.code === 0 ? claude.stdout.trim() : "claude CLI not found (terminal pane will fail without it)",
+    hint: claude.code === 0 ? void 0 : "install Claude Code from https://claude.com/code"
+  });
   const overall = aggregate(checks);
   return { overall, checks };
 }
@@ -42626,6 +42659,49 @@ function aggregate(checks) {
   if (checks.some((c) => c.status === "red")) return "red";
   if (checks.some((c) => c.status === "yellow")) return "yellow";
   return "green";
+}
+
+// src/mcp/daemon-fetch.ts
+init_esm_shims();
+import { existsSync as existsSync7, readFileSync as readFileSync9 } from "fs";
+import { join as join10 } from "path";
+async function daemonFetch(pathAndQuery, opts = {}) {
+  const status = readDaemonStatus();
+  if (!status.running || !status.url) {
+    throw new Error("daemon not running \u2014 call daemon_start first");
+  }
+  const url = status.url + pathAndQuery;
+  const init = {
+    method: opts.method ?? "GET",
+    headers: { "content-type": "application/json" }
+  };
+  if (opts.body !== void 0) init.body = JSON.stringify(opts.body);
+  if (init.method !== "GET") {
+    const secret = readSecret();
+    if (secret) init.headers["x-loom-secret"] = secret;
+  }
+  const r = await fetch(url, init);
+  const text = await r.text();
+  let json;
+  try {
+    json = text ? JSON.parse(text) : {};
+  } catch {
+    json = { raw: text };
+  }
+  if (!r.ok) {
+    const msg = json.error ?? `HTTP ${r.status}`;
+    throw new Error(msg);
+  }
+  return json;
+}
+function readSecret() {
+  const p = join10(serverDir(), "secret");
+  if (!existsSync7(p)) return null;
+  try {
+    return readFileSync9(p, "utf8").trim();
+  } catch {
+    return null;
+  }
 }
 
 // src/mcp/registry.ts
@@ -43223,6 +43299,37 @@ function registerAllTools() {
     "Stop the running loom daemon (if any).",
     external_exports.object({}),
     async () => stopDaemonDetached()
+  );
+  r.add(
+    "terminal_start",
+    "Start a claude PTY session for the project, mirrored to the studio chrome via @celestial/forge + @celestial/lens.",
+    external_exports.object({ projectId: external_exports.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) throw new Error("no project open; pass projectId or open one first");
+      return await daemonFetch("/api/loom/terminal/start", { method: "POST", body: { projectId: id } });
+    }
+  );
+  r.add(
+    "terminal_stop",
+    "Stop the claude PTY session for the project.",
+    external_exports.object({ projectId: external_exports.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) return { stopped: false };
+      return await daemonFetch("/api/loom/terminal/stop", { method: "POST", body: { projectId: id } });
+    }
+  );
+  r.add(
+    "terminal_status",
+    "Get current claude PTY session status for the project.",
+    external_exports.object({ projectId: external_exports.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) return { running: false };
+      const q = `?projectId=${encodeURIComponent(id)}`;
+      return await daemonFetch(`/api/loom/terminal/status${q}`);
+    }
   );
   r.add(
     "stage_url",

@@ -10,6 +10,13 @@ import { buildManifest, versionSnapshot } from "./core/version.js";
 import { routeList } from "./core/routes.js";
 import { ensureStudio, fullReload, stopAllStudios } from "./studio/server.js";
 import { renderStudioChrome } from "./studio/chrome.js";
+import {
+  ensureClaudeSession,
+  sessionStatusAsync,
+  stopAllClaudeSessions,
+  stopClaudeSession,
+} from "./pty/runtime.js";
+import { attachMirror } from "./pty/mirror.js";
 
 const DEFAULT_PORT = Number(process.env.LOOM_PORT ?? 5174);
 
@@ -166,6 +173,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
           vitePort: studio.port,
           daemonPort: boundPort,
           routes,
+          daemonSecret: secret,
         });
         return reply.type("text/html").send(html);
       } catch (err: unknown) {
@@ -193,6 +201,113 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
     }
     return reply.type("text/html").send(renderProjectIndex(projects));
   });
+
+  // -- Terminal (claude session) -----------------------------------------
+  //
+  // Composes @celestial/forge.createClaudeRuntime + @celestial/lens.PtyScreenBuffer
+  // server-side; @celestial/rift renders the resulting cell grids in the
+  // browser via the bundle served from /__loom/vendor/terminal.js.
+
+  app.get<{ Querystring: { projectId?: string } }>(
+    "/api/loom/terminal/status",
+    async (req, reply) => {
+      const projectId = req.query.projectId ?? projectCurrent()?.id;
+      if (!projectId) {
+        reply.code(400);
+        return { error: "projectId is required (or open a project first)" };
+      }
+      return await sessionStatusAsync(projectId);
+    },
+  );
+
+  app.post<{ Body: { projectId?: string } }>(
+    "/api/loom/terminal/start",
+    async (req, reply) => {
+      const projectId = req.body?.projectId ?? projectCurrent()?.id;
+      const proj = projectList().find((p) => p.id === projectId);
+      if (!proj) {
+        reply.code(404);
+        return { error: "project not found" };
+      }
+      try {
+        await ensureClaudeSession(proj);
+        return await sessionStatusAsync(proj.id);
+      } catch (err: unknown) {
+        reply.code(500);
+        return { error: (err as Error).message };
+      }
+    },
+  );
+
+  app.post<{ Body: { projectId?: string } }>(
+    "/api/loom/terminal/stop",
+    async (req, _reply) => {
+      const projectId = req.body?.projectId ?? projectCurrent()?.id;
+      if (!projectId) return { stopped: false };
+      await stopClaudeSession(projectId);
+      return { stopped: true };
+    },
+  );
+
+  app.register(async (instance) => {
+    instance.get<{ Querystring: { projectId?: string } }>(
+      "/api/loom/terminal/ws",
+      { websocket: true },
+      async (connection, req) => {
+        const projectId = req.query.projectId ?? projectCurrent()?.id;
+        const proj = projectList().find((p) => p.id === projectId);
+        if (!proj) {
+          try {
+            connection.send(JSON.stringify({ kind: "error", message: "project not found" }));
+            connection.close();
+          } catch {
+            /* noop */
+          }
+          return;
+        }
+        try {
+          const session = await ensureClaudeSession(proj);
+          attachMirror(session, {
+            send: (data) => connection.send(data),
+            on: (event, cb) => connection.on(event, cb as (...args: unknown[]) => void),
+          });
+        } catch (err: unknown) {
+          try {
+            connection.send(JSON.stringify({ kind: "error", message: (err as Error).message }));
+            connection.close();
+          } catch {
+            /* noop */
+          }
+        }
+      },
+    );
+  });
+
+  // Vendored browser bundle: rift + the loom terminal client.
+  app.get<{ Params: { "*": string } }>(
+    "/__loom/vendor/*",
+    async (req, reply) => {
+      const rel = req.params["*"] ?? "";
+      if (!/^[a-zA-Z0-9._\-/]+$/.test(rel) || rel.includes("..")) {
+        reply.code(400);
+        return { error: "invalid path" };
+      }
+      const here = new URL("./", import.meta.url).pathname;
+      // Windows: file URL path starts with /C:/...; strip the leading slash.
+      const base = here.replace(/^\/([A-Za-z]:\/)/, "$1");
+      const path = join(base, "vendor", rel);
+      if (!existsSync(path)) {
+        reply.code(404);
+        return { error: "not found" };
+      }
+      const isCss = path.endsWith(".css");
+      const isJs = path.endsWith(".js") || path.endsWith(".mjs");
+      reply.type(isCss ? "text/css" : isJs ? "text/javascript" : "application/octet-stream");
+      // No-cache while we iterate — the bundle changes on rebuild.
+      reply.header("cache-control", "no-store");
+      return reply.send(readFileSync(path));
+    },
+  );
 
   app.register(async (instance) => {
     instance.get("/api/loom/ws", { websocket: true }, (connection) => {
@@ -253,6 +368,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
         }
       }
       sockets.clear();
+      await stopAllClaudeSessions();
       await stopAllStudios();
       await app.close();
       clearRunFiles();
@@ -325,7 +441,7 @@ function clearRunFiles(): void {
 }
 
 function pkgVersion(): string {
-  return process.env.LOOM_VERSION ?? "0.9.2";
+  return process.env.LOOM_VERSION ?? "0.9.3";
 }
 
 function ensureDaemonSecret(): string {

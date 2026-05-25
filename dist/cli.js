@@ -67966,12 +67966,25 @@ function renderStudioChrome(ctx) {
       </div>
     </header>
 
-    <main class="stage">
-      <div id="frame-wrap" class="frame-wrap" data-viewport="fit">
-        <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
-        <div class="viewport-label"><span id="vp-label">Fit</span></div>
-      </div>
+    <main class="stage" id="stage">
+      <section class="term-pane" id="term-pane">
+        <div class="term-header">
+          <strong>claude</strong>
+          <span class="term-meta" id="term-status">idle</span>
+          <span class="term-spacer"></span>
+          <button id="term-toggle" class="term-btn">Start session</button>
+        </div>
+        <div class="term-host" id="term-host" tabindex="0"></div>
+      </section>
+      <div class="split-handle" id="split-handle" aria-label="Resize panes" role="separator"></div>
+      <section class="preview-pane">
+        <div id="frame-wrap" class="frame-wrap" data-viewport="fit">
+          <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
+          <div class="viewport-label"><span id="vp-label">Fit</span></div>
+        </div>
+      </section>
     </main>
+    <script src="/__loom/vendor/terminal.js?v=${Date.now()}" defer></script>
 
     <footer class="status">
       <span class="dot" id="ws-dot"></span>
@@ -68033,7 +68046,20 @@ body { display: grid; grid-template-rows: auto 1fr auto; }
 
 .reload { width: 28px; padding: 0 !important; font-size: 14px; }
 
-.stage { background: var(--stage-bg); padding: 18px; overflow: auto; display: grid; place-items: start center; }
+.stage { background: var(--stage-bg); display: grid; grid-template-columns: var(--split, 460px) 6px 1fr; min-height: 0; overflow: hidden; }
+.split-handle { background: var(--chrome-border); cursor: col-resize; transition: background 100ms; }
+.split-handle:hover, .split-handle.dragging { background: var(--chrome-accent); }
+.term-pane { display: flex; flex-direction: column; min-width: 0; background: oklch(0.14 0.01 38); color: oklch(0.92 0.01 38); border-right: 1px solid var(--chrome-border); }
+.term-header { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--chrome-border); background: var(--chrome-bg); font-size: 11.5px; }
+.term-header strong { font-weight: 600; color: var(--chrome-text); }
+.term-meta { font-size: 10.5px; color: var(--chrome-muted); }
+.term-spacer { flex: 1; }
+.term-btn { background: var(--chrome-accent); color: #1a1207; border: none; padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.term-btn[data-running] { background: transparent; color: var(--chrome-muted); border: 1px solid var(--chrome-border); }
+.term-btn[data-running]:hover { color: #f85149; border-color: #f85149; }
+.term-host { flex: 1; padding: 8px; overflow: auto; outline: none; font-family: 'Cascadia Mono', 'Menlo', ui-monospace, monospace; font-size: 12.5px; line-height: 1.35; }
+.term-host:empty::before { content: 'Click "Start session" to launch claude in this project.'; color: var(--chrome-muted); font-style: italic; }
+.preview-pane { display: flex; align-items: start; justify-content: center; padding: 18px; overflow: auto; background: var(--stage-bg); min-width: 0; }
 .frame-wrap { position: relative; background: white; border: 1px solid #d0d2d6; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 28px -16px rgba(0,0,0,0.18); overflow: hidden; }
 .frame-wrap[data-viewport="fit"] { width: 100%; max-width: 1440px; height: calc(100vh - 100px); }
 .frame-wrap[data-viewport="360x720"] { width: 360px; height: 720px; }
@@ -68054,6 +68080,9 @@ function chromeScript(ctx) {
   return `
 const VITE_ORIGIN = ${JSON.stringify(`http://127.0.0.1:${ctx.vitePort}`)};
 const DAEMON_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/ws`)};
+const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/terminal/ws?projectId=${ctx.project.id}`)};
+const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
+const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
 const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile \xB7 360", "768x1024": "Tablet \xB7 768", "1280x800": "Desktop \xB7 1280", "1440x900": "Wide \xB7 1440" };
 
 const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
@@ -68124,7 +68153,261 @@ function connectWS() {
   }
 }
 connectWS();
+
+// -- Terminal pane (claude session) ----------------------------------
+const termHost = $("term-host");
+const termStatus = $("term-status");
+const termToggle = $("term-toggle");
+let termDispose = null;
+
+function setTermStatus(s, detail) {
+  const label = { connecting: "connecting\u2026", open: "live", closed: "disconnected", exited: "exited" + (detail ? " (" + detail + ")" : ""), error: "error" + (detail ? " \xB7 " + detail : "") };
+  termStatus.textContent = label[s] || s;
+}
+
+async function startTerminal() {
+  termToggle.disabled = true;
+  termStatus.textContent = "starting\u2026";
+  try {
+    const r = await fetch("/api/loom/terminal/start", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
+      body: JSON.stringify({ projectId: PROJECT_ID }),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
+  } catch (err) {
+    setTermStatus("error", err.message);
+    termToggle.disabled = false;
+    return;
+  }
+  termHost.replaceChildren();
+  if (typeof window.__loomTerminal !== "function") {
+    setTermStatus("error", "terminal client not loaded");
+    termToggle.disabled = false;
+    return;
+  }
+  termDispose = window.__loomTerminal({
+    host: termHost,
+    wsUrl: TERM_WS,
+    onStatus: setTermStatus,
+  });
+  termToggle.textContent = "Stop";
+  termToggle.setAttribute("data-running", "1");
+  termToggle.disabled = false;
+}
+
+async function stopTerminal() {
+  termToggle.disabled = true;
+  if (termDispose) { try { termDispose(); } catch {} termDispose = null; }
+  try {
+    await fetch("/api/loom/terminal/stop", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
+      body: JSON.stringify({ projectId: PROJECT_ID }),
+    });
+  } catch {}
+  termHost.replaceChildren();
+  termToggle.textContent = "Start session";
+  termToggle.removeAttribute("data-running");
+  setTermStatus("closed");
+  termToggle.disabled = false;
+}
+
+termToggle.addEventListener("click", () => {
+  if (termToggle.hasAttribute("data-running")) stopTerminal();
+  else startTerminal();
+});
+
+// -- Split-pane drag handle ------------------------------------------
+const stageEl = $("stage");
+const handle = $("split-handle");
+const SPLIT_KEY = "loom:split:" + PROJECT_ID;
+const savedSplit = localStorage.getItem(SPLIT_KEY);
+if (savedSplit) stageEl.style.setProperty("--split", savedSplit);
+
+let dragging = false;
+handle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  handle.setPointerCapture(e.pointerId);
+  handle.classList.add("dragging");
+});
+handle.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  const rect = stageEl.getBoundingClientRect();
+  const px = Math.max(240, Math.min(rect.width - 240, e.clientX - rect.left));
+  const value = px + "px";
+  stageEl.style.setProperty("--split", value);
+  localStorage.setItem(SPLIT_KEY, value);
+});
+handle.addEventListener("pointerup", (e) => {
+  dragging = false;
+  try { handle.releasePointerCapture(e.pointerId); } catch {}
+  handle.classList.remove("dragging");
+});
 `;
+}
+
+// src/pty/runtime.ts
+init_esm_shims();
+import { createClaudeRuntime } from "@celestial/forge";
+import { PtyScreenBuffer } from "@celestial/lens";
+var DEFAULT_COLS = 100;
+var DEFAULT_ROWS = 30;
+var sessions = /* @__PURE__ */ new Map();
+function ensureClaudeSession(project) {
+  const cached = sessions.get(project.id);
+  if (cached) return cached;
+  const p = bootSession(project).catch((err) => {
+    sessions.delete(project.id);
+    throw err;
+  });
+  sessions.set(project.id, p);
+  return p;
+}
+async function stopClaudeSession(projectId) {
+  const p = sessions.get(projectId);
+  if (!p) return;
+  sessions.delete(projectId);
+  try {
+    const s = await p;
+    await s.runtime.dispose();
+  } catch {
+  }
+}
+async function stopAllClaudeSessions() {
+  const all = Array.from(sessions.values());
+  sessions.clear();
+  await Promise.allSettled(
+    all.map(async (p) => {
+      const s = await p;
+      await s.runtime.dispose();
+    })
+  );
+}
+async function bootSession(project) {
+  const cols = DEFAULT_COLS;
+  const rows = DEFAULT_ROWS;
+  const runtime = await createClaudeRuntime({
+    claudeExecutable: "claude",
+    claudeArgs: [],
+    cwd: project.path,
+    cols,
+    rows
+  });
+  const screen = new PtyScreenBuffer(cols, rows);
+  const frameListeners = /* @__PURE__ */ new Set();
+  const exitListeners = /* @__PURE__ */ new Set();
+  const removeData = runtime.ptyHandle.onData((chunk) => {
+    screen.write(chunk);
+    for (const cb of frameListeners) {
+      try {
+        cb();
+      } catch {
+      }
+    }
+  });
+  runtime.ptyHandle.onExit((ev) => {
+    sessions.delete(project.id);
+    const code = typeof ev.exitCode === "number" ? ev.exitCode : null;
+    for (const cb of exitListeners) {
+      try {
+        cb(code);
+      } catch {
+      }
+    }
+    removeData();
+  });
+  return {
+    projectId: project.id,
+    runtime,
+    screen,
+    cols,
+    rows,
+    startedAt: Date.now(),
+    onFrame(cb) {
+      frameListeners.add(cb);
+      return () => frameListeners.delete(cb);
+    },
+    onExit(cb) {
+      exitListeners.add(cb);
+      return () => exitListeners.delete(cb);
+    }
+  };
+}
+async function sessionStatusAsync(projectId) {
+  const p = sessions.get(projectId);
+  if (!p) return { running: false };
+  const s = await p;
+  return {
+    running: !s.runtime.disposed,
+    pid: s.runtime.ptyHandle.pid,
+    cols: s.cols,
+    rows: s.rows,
+    startedAt: s.startedAt
+  };
+}
+
+// src/pty/mirror.ts
+init_esm_shims();
+function attachMirror(session, ws, opts = {}) {
+  const flushMs = opts.flushIntervalMs ?? 30;
+  send({ kind: "hello", cols: session.cols, rows: session.rows, pid: session.runtime.ptyHandle.pid });
+  send({ kind: "frame", frame: session.screen.getFrame() });
+  let pending = false;
+  let timer = null;
+  function send(message) {
+    try {
+      ws.send(JSON.stringify(message));
+    } catch {
+    }
+  }
+  function flush() {
+    timer = null;
+    if (!pending) return;
+    pending = false;
+    send({ kind: "frame", frame: session.screen.getFrame() });
+  }
+  function schedule() {
+    pending = true;
+    if (timer) return;
+    timer = setTimeout(flush, flushMs);
+  }
+  const unsubFrame = session.onFrame(schedule);
+  const unsubExit = session.onExit((code) => {
+    send({ kind: "exit", code });
+  });
+  ws.on("message", (raw) => {
+    if (typeof raw !== "string" && !(raw instanceof Buffer)) return;
+    const text = typeof raw === "string" ? raw : raw.toString("utf8");
+    let msg;
+    try {
+      msg = JSON.parse(text);
+    } catch {
+      return;
+    }
+    if (msg.kind === "input" && typeof msg.data === "string") {
+      session.runtime.ptyHandle.write(msg.data);
+    } else if (msg.kind === "resize" && typeof msg.cols === "number" && typeof msg.rows === "number") {
+      const cols = Math.max(20, Math.min(500, Math.round(msg.cols)));
+      const rows = Math.max(5, Math.min(200, Math.round(msg.rows)));
+      session.runtime.ptyHandle.resize(cols, rows);
+      session.screen.resize(cols, rows);
+      session.cols = cols;
+      session.rows = rows;
+      send({ kind: "frame", frame: session.screen.getFrame() });
+    }
+  });
+  ws.on("close", () => {
+    if (timer) clearTimeout(timer);
+    unsubFrame();
+    unsubExit();
+  });
+  return () => {
+    if (timer) clearTimeout(timer);
+    unsubFrame();
+    unsubExit();
+  };
 }
 
 // src/daemon.ts
@@ -68246,7 +68529,8 @@ async function startDaemon(opts = {}) {
           project: proj,
           vitePort: studio.port,
           daemonPort: boundPort,
-          routes
+          routes,
+          daemonSecret: secret
         });
         return reply.type("text/html").send(html);
       } catch (err) {
@@ -68270,6 +68554,97 @@ async function startDaemon(opts = {}) {
     }
     return reply.type("text/html").send(renderProjectIndex(projects));
   });
+  app.get(
+    "/api/loom/terminal/status",
+    async (req, reply) => {
+      const projectId = req.query.projectId ?? projectCurrent()?.id;
+      if (!projectId) {
+        reply.code(400);
+        return { error: "projectId is required (or open a project first)" };
+      }
+      return await sessionStatusAsync(projectId);
+    }
+  );
+  app.post(
+    "/api/loom/terminal/start",
+    async (req, reply) => {
+      const projectId = req.body?.projectId ?? projectCurrent()?.id;
+      const proj = projectList().find((p) => p.id === projectId);
+      if (!proj) {
+        reply.code(404);
+        return { error: "project not found" };
+      }
+      try {
+        await ensureClaudeSession(proj);
+        return await sessionStatusAsync(proj.id);
+      } catch (err) {
+        reply.code(500);
+        return { error: err.message };
+      }
+    }
+  );
+  app.post(
+    "/api/loom/terminal/stop",
+    async (req, _reply) => {
+      const projectId = req.body?.projectId ?? projectCurrent()?.id;
+      if (!projectId) return { stopped: false };
+      await stopClaudeSession(projectId);
+      return { stopped: true };
+    }
+  );
+  app.register(async (instance) => {
+    instance.get(
+      "/api/loom/terminal/ws",
+      { websocket: true },
+      async (connection, req) => {
+        const projectId = req.query.projectId ?? projectCurrent()?.id;
+        const proj = projectList().find((p) => p.id === projectId);
+        if (!proj) {
+          try {
+            connection.send(JSON.stringify({ kind: "error", message: "project not found" }));
+            connection.close();
+          } catch {
+          }
+          return;
+        }
+        try {
+          const session = await ensureClaudeSession(proj);
+          attachMirror(session, {
+            send: (data) => connection.send(data),
+            on: (event, cb) => connection.on(event, cb)
+          });
+        } catch (err) {
+          try {
+            connection.send(JSON.stringify({ kind: "error", message: err.message }));
+            connection.close();
+          } catch {
+          }
+        }
+      }
+    );
+  });
+  app.get(
+    "/__loom/vendor/*",
+    async (req, reply) => {
+      const rel = req.params["*"] ?? "";
+      if (!/^[a-zA-Z0-9._\-/]+$/.test(rel) || rel.includes("..")) {
+        reply.code(400);
+        return { error: "invalid path" };
+      }
+      const here = new URL("./", import.meta.url).pathname;
+      const base = here.replace(/^\/([A-Za-z]:\/)/, "$1");
+      const path2 = join10(base, "vendor", rel);
+      if (!existsSync6(path2)) {
+        reply.code(404);
+        return { error: "not found" };
+      }
+      const isCss = path2.endsWith(".css");
+      const isJs = path2.endsWith(".js") || path2.endsWith(".mjs");
+      reply.type(isCss ? "text/css" : isJs ? "text/javascript" : "application/octet-stream");
+      reply.header("cache-control", "no-store");
+      return reply.send(readFileSync8(path2));
+    }
+  );
   app.register(async (instance) => {
     instance.get("/api/loom/ws", { websocket: true }, (connection) => {
       const send = (data) => connection.send(data);
@@ -68323,6 +68698,7 @@ async function startDaemon(opts = {}) {
         }
       }
       sockets.clear();
+      await stopAllClaudeSessions();
       await stopAllStudios();
       await app.close();
       clearRunFiles();
@@ -68382,7 +68758,7 @@ function clearRunFiles() {
   }
 }
 function pkgVersion() {
-  return process.env.LOOM_VERSION ?? "0.9.2";
+  return process.env.LOOM_VERSION ?? "0.9.3";
 }
 function ensureDaemonSecret() {
   const path2 = join10(serverDir(), "secret");
@@ -68548,6 +68924,39 @@ async function runDoctor() {
     name: "daemon",
     status: daemon.running ? "green" : "yellow",
     message: daemon.running ? `daemon running pid=${daemon.pid} url=${daemon.url}` : "daemon not running \u2014 call daemon_start or run /loom:start"
+  });
+  const celestial = [
+    { name: "@celestial/forge", hint: "PTY + claude session lifecycle" },
+    { name: "@celestial/lens", hint: "server-side screen buffer" },
+    { name: "@celestial/rift", hint: "browser-side terminal renderer" },
+    { name: "@celestial/beacon-browser", hint: "browser extension chunks" }
+  ];
+  for (const c of celestial) {
+    let ok = false;
+    let detail = "";
+    try {
+      const mod = await import(
+        /* @vite-ignore */
+        c.name
+      );
+      ok = !!mod;
+      detail = "present";
+    } catch (err) {
+      detail = err.message.split("\n")[0] ?? "load failed";
+    }
+    checks.push({
+      name: c.name,
+      status: ok ? "green" : "red",
+      message: ok ? `${c.hint} \u2014 ${detail}` : `${c.hint} \u2014 ${detail}`,
+      hint: ok ? void 0 : "ensure the Celestial worktree at C:/Development/celestial/.worktrees/claude-wrapper-rewire/ is built and linked"
+    });
+  }
+  const claude = await execFileNoThrow("claude", ["--version"]);
+  checks.push({
+    name: "claude",
+    status: claude.code === 0 ? "green" : "yellow",
+    message: claude.code === 0 ? claude.stdout.trim() : "claude CLI not found (terminal pane will fail without it)",
+    hint: claude.code === 0 ? void 0 : "install Claude Code from https://claude.com/code"
   });
   const overall = aggregate(checks);
   return { overall, checks };

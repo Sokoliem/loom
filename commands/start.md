@@ -14,3 +14,5 @@ Output shape:
 - stage URL (if project open): `http://127.0.0.1:<port>/loom/preview/<projectId>/`
 
 If `daemon_start` reports the daemon was already running, treat that as success — just surface the existing URLs.
+
+The studio now includes a split pane with a claude terminal on the left and the route preview on the right. Tell the user they can click "Start session" in the chrome (or run `/loom:terminal start`) to spawn the in-browser claude session for the current project.

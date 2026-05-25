@@ -1,6 +1,6 @@
 {
   "name": "loom",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Design workspace for Claude Code — chat-plus-stage workflow with tokens, components, routes, panel, forge, exports",
   "license": "MIT",
   "author": "Eric Sokolowski",
@@ -21,7 +21,7 @@
     "docs"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && node scripts/bundle-terminal-client.js",
     "dev": "tsup --watch",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -33,6 +33,10 @@
   "dependencies": {
     "@babel/parser": "^7.29.3",
     "@fastify/websocket": "^11.0.1",
+    "@celestial/beacon-browser": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/beacon-browser",
+    "@celestial/forge": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/forge",
+    "@celestial/lens": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens",
+    "@celestial/rift": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift",
     "@modelcontextprotocol/sdk": "^1.0.4",
     "@vitejs/plugin-react": "^4.3.4",
     "acorn": "^8.14.0",

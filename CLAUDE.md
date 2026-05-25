@@ -1,7 +1,14 @@
 # CLAUDE.md — `loom`
 
 Design workspace for Claude Code. Local-first, OAuth-only, single-driver.
-Standalone variant of the Celestial app described in `loom-prd-v3.md` (PRD v1.1 plugin-SDK distribution).
+Implements the Celestial app described in `loom-prd-v3.md`.
+
+As of v0.9.3 loom composes the PRD's `forge.createClaudeRuntime` +
+`lens.PtyScreenBuffer` + `rift` browser renderer for the in-studio claude
+terminal pane. These come from `@celestial/forge`, `@celestial/lens`, and
+`@celestial/rift` on the `wip/celestial/claude-wrapper-rewire` Celestial
+worktree at `C:\Development\celestial\.worktrees\claude-wrapper-rewire\`
+(linked via the `link:` deps in `package.json`).
 
 ## Project goals
 
@@ -83,9 +90,11 @@ pnpm package                # build + create loom-plugin.zip
 
 - Phase 0 (spike): complete (this initial build).
 - Phase 1 (MVP): complete in v0.9.0 — all PRD §7.1 tools, file watcher, exports, lints.
+  - v0.9.2 added the studio preview (Vite-as-library + chrome + tokens-to-CSS + HMR bridge).
+  - v0.9.3 added the chat half — claude PTY mirrored to the browser via the Celestial substrate, split-pane studio chrome.
 - Phase 2 (panel + reviews): complete in v0.9.0 — 5-agent panel skill, review CRDT scaffold.
 - Phase 3 (branch + forge): complete in v0.9.0 — git-worktree forge loop, branch tools.
-- Phase 4 (hardening): partial — doctor, determinism, cross-OS CI deferred to v1.0.
+- Phase 4 (hardening): partial — doctor improved in v0.9.3 (adds Celestial-resolution + claude CLI checks); determinism + cross-OS CI deferred to v1.0.
 
 ## Working on this codebase
 

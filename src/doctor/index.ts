@@ -118,6 +118,43 @@ export async function runDoctor(): Promise<{ overall: "green" | "yellow" | "red"
       : "daemon not running — call daemon_start or run /loom:start",
   });
 
+  // Celestial substrate — loom composes @celestial/forge for the claude PTY,
+  // @celestial/lens for the screen buffer, and @celestial/rift for the
+  // browser-side renderer. All three must resolve.
+  const celestial = [
+    { name: "@celestial/forge", hint: "PTY + claude session lifecycle" },
+    { name: "@celestial/lens", hint: "server-side screen buffer" },
+    { name: "@celestial/rift", hint: "browser-side terminal renderer" },
+    { name: "@celestial/beacon-browser", hint: "browser extension chunks" },
+  ];
+  for (const c of celestial) {
+    let ok = false;
+    let detail = "";
+    try {
+      // dynamic import keeps tsc from inlining the resolution
+      const mod = await import(/* @vite-ignore */ c.name);
+      ok = !!mod;
+      detail = "present";
+    } catch (err) {
+      detail = (err as Error).message.split("\n")[0] ?? "load failed";
+    }
+    checks.push({
+      name: c.name,
+      status: ok ? "green" : "red",
+      message: ok ? `${c.hint} — ${detail}` : `${c.hint} — ${detail}`,
+      hint: ok ? undefined : "ensure the Celestial worktree at C:/Development/celestial/.worktrees/claude-wrapper-rewire/ is built and linked",
+    });
+  }
+
+  // Claude CLI — needed for the terminal pane (forge.createClaudeRuntime spawns it).
+  const claude = await execFileNoThrow("claude", ["--version"]);
+  checks.push({
+    name: "claude",
+    status: claude.code === 0 ? "green" : "yellow",
+    message: claude.code === 0 ? claude.stdout.trim() : "claude CLI not found (terminal pane will fail without it)",
+    hint: claude.code === 0 ? undefined : "install Claude Code from https://claude.com/code",
+  });
+
   const overall = aggregate(checks);
   return { overall, checks };
 }

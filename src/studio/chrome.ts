@@ -5,6 +5,13 @@ export interface ChromeContext {
   vitePort: number;
   daemonPort: number;
   routes: { path: string }[];
+  /**
+   * The daemon's shared secret. Embedded into the chrome's inline JS so the
+   * browser can authenticate mutating fetches (e.g. `/api/loom/terminal/start`).
+   * Safe because the chrome is only ever served to the same-origin localhost
+   * browser; the secret protects against cross-origin reads, not local ones.
+   */
+  daemonSecret: string;
 }
 
 /**
@@ -64,12 +71,25 @@ export function renderStudioChrome(ctx: ChromeContext): string {
       </div>
     </header>
 
-    <main class="stage">
-      <div id="frame-wrap" class="frame-wrap" data-viewport="fit">
-        <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
-        <div class="viewport-label"><span id="vp-label">Fit</span></div>
-      </div>
+    <main class="stage" id="stage">
+      <section class="term-pane" id="term-pane">
+        <div class="term-header">
+          <strong>claude</strong>
+          <span class="term-meta" id="term-status">idle</span>
+          <span class="term-spacer"></span>
+          <button id="term-toggle" class="term-btn">Start session</button>
+        </div>
+        <div class="term-host" id="term-host" tabindex="0"></div>
+      </section>
+      <div class="split-handle" id="split-handle" aria-label="Resize panes" role="separator"></div>
+      <section class="preview-pane">
+        <div id="frame-wrap" class="frame-wrap" data-viewport="fit">
+          <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
+          <div class="viewport-label"><span id="vp-label">Fit</span></div>
+        </div>
+      </section>
     </main>
+    <script src="/__loom/vendor/terminal.js?v=${Date.now()}" defer></script>
 
     <footer class="status">
       <span class="dot" id="ws-dot"></span>
@@ -134,7 +154,20 @@ body { display: grid; grid-template-rows: auto 1fr auto; }
 
 .reload { width: 28px; padding: 0 !important; font-size: 14px; }
 
-.stage { background: var(--stage-bg); padding: 18px; overflow: auto; display: grid; place-items: start center; }
+.stage { background: var(--stage-bg); display: grid; grid-template-columns: var(--split, 460px) 6px 1fr; min-height: 0; overflow: hidden; }
+.split-handle { background: var(--chrome-border); cursor: col-resize; transition: background 100ms; }
+.split-handle:hover, .split-handle.dragging { background: var(--chrome-accent); }
+.term-pane { display: flex; flex-direction: column; min-width: 0; background: oklch(0.14 0.01 38); color: oklch(0.92 0.01 38); border-right: 1px solid var(--chrome-border); }
+.term-header { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--chrome-border); background: var(--chrome-bg); font-size: 11.5px; }
+.term-header strong { font-weight: 600; color: var(--chrome-text); }
+.term-meta { font-size: 10.5px; color: var(--chrome-muted); }
+.term-spacer { flex: 1; }
+.term-btn { background: var(--chrome-accent); color: #1a1207; border: none; padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.term-btn[data-running] { background: transparent; color: var(--chrome-muted); border: 1px solid var(--chrome-border); }
+.term-btn[data-running]:hover { color: #f85149; border-color: #f85149; }
+.term-host { flex: 1; padding: 8px; overflow: auto; outline: none; font-family: 'Cascadia Mono', 'Menlo', ui-monospace, monospace; font-size: 12.5px; line-height: 1.35; }
+.term-host:empty::before { content: 'Click "Start session" to launch claude in this project.'; color: var(--chrome-muted); font-style: italic; }
+.preview-pane { display: flex; align-items: start; justify-content: center; padding: 18px; overflow: auto; background: var(--stage-bg); min-width: 0; }
 .frame-wrap { position: relative; background: white; border: 1px solid #d0d2d6; border-radius: 8px; box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 12px 28px -16px rgba(0,0,0,0.18); overflow: hidden; }
 .frame-wrap[data-viewport="fit"] { width: 100%; max-width: 1440px; height: calc(100vh - 100px); }
 .frame-wrap[data-viewport="360x720"] { width: 360px; height: 720px; }
@@ -156,6 +189,9 @@ function chromeScript(ctx: ChromeContext): string {
   return `
 const VITE_ORIGIN = ${JSON.stringify(`http://127.0.0.1:${ctx.vitePort}`)};
 const DAEMON_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/ws`)};
+const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/terminal/ws?projectId=${ctx.project.id}`)};
+const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
+const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
 const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile · 360", "768x1024": "Tablet · 768", "1280x800": "Desktop · 1280", "1440x900": "Wide · 1440" };
 
 const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
@@ -226,5 +262,97 @@ function connectWS() {
   }
 }
 connectWS();
+
+// -- Terminal pane (claude session) ----------------------------------
+const termHost = $("term-host");
+const termStatus = $("term-status");
+const termToggle = $("term-toggle");
+let termDispose = null;
+
+function setTermStatus(s, detail) {
+  const label = { connecting: "connecting…", open: "live", closed: "disconnected", exited: "exited" + (detail ? " (" + detail + ")" : ""), error: "error" + (detail ? " · " + detail : "") };
+  termStatus.textContent = label[s] || s;
+}
+
+async function startTerminal() {
+  termToggle.disabled = true;
+  termStatus.textContent = "starting…";
+  try {
+    const r = await fetch("/api/loom/terminal/start", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
+      body: JSON.stringify({ projectId: PROJECT_ID }),
+    });
+    const j = await r.json();
+    if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
+  } catch (err) {
+    setTermStatus("error", err.message);
+    termToggle.disabled = false;
+    return;
+  }
+  termHost.replaceChildren();
+  if (typeof window.__loomTerminal !== "function") {
+    setTermStatus("error", "terminal client not loaded");
+    termToggle.disabled = false;
+    return;
+  }
+  termDispose = window.__loomTerminal({
+    host: termHost,
+    wsUrl: TERM_WS,
+    onStatus: setTermStatus,
+  });
+  termToggle.textContent = "Stop";
+  termToggle.setAttribute("data-running", "1");
+  termToggle.disabled = false;
+}
+
+async function stopTerminal() {
+  termToggle.disabled = true;
+  if (termDispose) { try { termDispose(); } catch {} termDispose = null; }
+  try {
+    await fetch("/api/loom/terminal/stop", {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
+      body: JSON.stringify({ projectId: PROJECT_ID }),
+    });
+  } catch {}
+  termHost.replaceChildren();
+  termToggle.textContent = "Start session";
+  termToggle.removeAttribute("data-running");
+  setTermStatus("closed");
+  termToggle.disabled = false;
+}
+
+termToggle.addEventListener("click", () => {
+  if (termToggle.hasAttribute("data-running")) stopTerminal();
+  else startTerminal();
+});
+
+// -- Split-pane drag handle ------------------------------------------
+const stageEl = $("stage");
+const handle = $("split-handle");
+const SPLIT_KEY = "loom:split:" + PROJECT_ID;
+const savedSplit = localStorage.getItem(SPLIT_KEY);
+if (savedSplit) stageEl.style.setProperty("--split", savedSplit);
+
+let dragging = false;
+handle.addEventListener("pointerdown", (e) => {
+  dragging = true;
+  handle.setPointerCapture(e.pointerId);
+  handle.classList.add("dragging");
+});
+handle.addEventListener("pointermove", (e) => {
+  if (!dragging) return;
+  const rect = stageEl.getBoundingClientRect();
+  const px = Math.max(240, Math.min(rect.width - 240, e.clientX - rect.left));
+  const value = px + "px";
+  stageEl.style.setProperty("--split", value);
+  localStorage.setItem(SPLIT_KEY, value);
+});
+handle.addEventListener("pointerup", (e) => {
+  dragging = false;
+  try { handle.releasePointerCapture(e.pointerId); } catch {}
+  handle.classList.remove("dragging");
+});
 `;
 }

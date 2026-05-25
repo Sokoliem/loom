@@ -11,6 +11,18 @@ importers:
       '@babel/parser':
         specifier: ^7.29.3
         version: 7.29.7
+      '@celestial/beacon-browser':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/beacon-browser
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/beacon-browser
+      '@celestial/forge':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/forge
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/forge
+      '@celestial/lens':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens
+      '@celestial/rift':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift
       '@fastify/websocket':
         specifier: ^11.0.1
         version: 11.2.0

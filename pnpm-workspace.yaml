@@ -1,0 +1,8 @@
+# pnpm-workspace.yaml left as a single-member workspace so pnpm doesn't
+# complain. The Celestial substrate is wired via `link:` deps in package.json
+# rather than workspace membership (workspace globs don't traverse out of root).
+# Once the wip/celestial/claude-wrapper-rewire branch merges to Celestial
+# mainline, switch the link: paths to a normal version range (or workspace
+# entry once Celestial publishes to a registry).
+packages:
+  - "."

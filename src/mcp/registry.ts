@@ -26,6 +26,7 @@ import { forgeAbort, forgeRunList, forgeSquash, forgeStart, recordForgeIteration
 import { reviewCreate, reviewGet, reviewList, reviewResolve } from "../reviews/index.js";
 import { runDoctor } from "../doctor/index.js";
 import { readDaemonStatus, startDaemonDetached, stopDaemonDetached } from "./daemon-control.js";
+import { daemonFetch } from "./daemon-fetch.js";
 
 export interface ToolDef<TSchema extends ZodTypeAny = ZodTypeAny> {
   name: string;
@@ -714,6 +715,41 @@ export function registerAllTools(): ToolRegistry {
     "Stop the running loom daemon (if any).",
     z.object({}),
     async () => stopDaemonDetached(),
+  );
+
+  // -- Terminal (claude PTY mirrored to the studio chrome) ---------------
+  r.add(
+    "terminal_start",
+    "Start a claude PTY session for the project, mirrored to the studio chrome via @celestial/forge + @celestial/lens.",
+    z.object({ projectId: z.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) throw new Error("no project open; pass projectId or open one first");
+      return await daemonFetch("/api/loom/terminal/start", { method: "POST", body: { projectId: id } });
+    },
+  );
+
+  r.add(
+    "terminal_stop",
+    "Stop the claude PTY session for the project.",
+    z.object({ projectId: z.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) return { stopped: false };
+      return await daemonFetch("/api/loom/terminal/stop", { method: "POST", body: { projectId: id } });
+    },
+  );
+
+  r.add(
+    "terminal_status",
+    "Get current claude PTY session status for the project.",
+    z.object({ projectId: z.string().optional() }),
+    async (input) => {
+      const id = input.projectId ?? projectCurrent()?.id;
+      if (!id) return { running: false };
+      const q = `?projectId=${encodeURIComponent(id)}`;
+      return await daemonFetch(`/api/loom/terminal/status${q}`);
+    },
   );
 
   r.add(
