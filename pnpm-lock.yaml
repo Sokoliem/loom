@@ -20,6 +20,9 @@ importers:
       '@celestial/lens':
         specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens
         version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens
+      '@celestial/nebula':
+        specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/nebula
+        version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/nebula
       '@celestial/rift':
         specifier: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift
         version: link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift

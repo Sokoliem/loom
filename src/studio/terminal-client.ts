@@ -188,13 +188,36 @@ window.__loomTerminal = (opts: BootOptions) => {
     send({ kind: "key", key: e.key, modifiers: modifiersOf(e) });
   });
 
-  // Paste
+  // Paste — text + image. Screenshot pastes (e.g. Win+Shift+S → Ctrl-V)
+  // arrive as a "file" item with type "image/*". The server writes them to
+  // a temp file and pastes the path into claude, which treats it as an
+  // attached image. Multi-line text goes through bracketed-paste server-side.
   opts.host.addEventListener("paste", (e) => {
-    const text = e.clipboardData?.getData("text") ?? "";
-    if (text) {
-      e.preventDefault();
-      send({ kind: "paste", data: text });
+    if (!e.clipboardData) return;
+    e.preventDefault();
+
+    for (const item of e.clipboardData.items) {
+      if (item.kind === "file" && item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (!file) continue;
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = typeof reader.result === "string" ? reader.result : "";
+          if (!result) return;
+          send({
+            kind: "paste-image",
+            dataBase64: result,
+            mime: file.type,
+            filename: file.name || undefined,
+          });
+        };
+        reader.readAsDataURL(file);
+        return; // one image per paste; ignore any text fallback
+      }
     }
+
+    const text = e.clipboardData.getData("text") ?? "";
+    if (text) send({ kind: "paste", data: text });
   });
 
   // Mouse — only forwarded to PTY when in mouse-tracking mode; the server

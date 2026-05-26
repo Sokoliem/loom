@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "Design workspace for Claude Code — chat + stage workflow with tokens, components, routes, panel, forge, and framework exports.",
-    "version": "0.9.4"
+    "version": "0.9.5"
   },
   "plugins": [
     {
       "name": "loom",
       "source": "./",
       "description": "Design workspace for Claude Code: chat + stage + tokens + components + routes + panel + forge + exports. OAuth-only, local-first.",
-      "version": "0.9.4",
+      "version": "0.9.5",
       "author": {
         "name": "Eric Sokolowski",
         "url": "https://github.com/Sokoliem"

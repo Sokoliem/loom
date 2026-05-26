@@ -1,6 +1,6 @@
 {
   "name": "loom",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "Design workspace for Claude Code: chat + stage + tokens + components + routes + panel + forge + exports. OAuth-only, local-first.",
   "author": {
     "name": "Eric Sokolowski",

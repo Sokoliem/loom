@@ -441,7 +441,7 @@ function clearRunFiles(): void {
 }
 
 function pkgVersion(): string {
-  return process.env.LOOM_VERSION ?? "0.9.4";
+  return process.env.LOOM_VERSION ?? "0.9.5";
 }
 
 function ensureDaemonSecret(): string {

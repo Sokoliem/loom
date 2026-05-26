@@ -3,8 +3,52 @@ import {
   normalizeBrowserMirrorKey,
   type KeyModifiers,
 } from "@celestial/lens";
+import { wrapBracketedPaste } from "@celestial/nebula";
 import { keyToBuffer } from "@celestial/telescope";
+import { randomUUID } from "node:crypto";
+import { writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ClaudeSession } from "./runtime.js";
+
+/** MIME → file extension for clipboard image paste. Mirrors the table in
+ *  `@celestial/lens/browser-mirror.ts` so behavior matches the wrapper. */
+const PASTE_IMAGE_EXT: Record<string, string> = {
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/jpg": "jpg",
+  "image/gif": "gif",
+  "image/webp": "webp",
+  "image/bmp": "bmp",
+  "image/svg+xml": "svg",
+};
+
+/**
+ * Materialize a base64 clipboard image to a temp file and return its path.
+ * The PTY then receives the path as a bracketed paste — claude treats it as
+ * an attached image. Matches the lens.browser-mirror.ts `writePastedImageToTmp`
+ * pattern (which is not exported, so we re-implement the tiny logic here).
+ */
+function writePastedImageToTmp(dataBase64: string, mime: string, filename?: string): string | null {
+  const idx = dataBase64.indexOf(",");
+  const payload = dataBase64.startsWith("data:") && idx >= 0 ? dataBase64.slice(idx + 1) : dataBase64;
+  let bytes: Buffer;
+  try {
+    bytes = Buffer.from(payload, "base64");
+  } catch {
+    return null;
+  }
+  if (bytes.length === 0) return null;
+  const ext = PASTE_IMAGE_EXT[mime?.toLowerCase() ?? ""] ?? "bin";
+  const safe = filename && /^[\w.-]+$/.test(filename) ? filename : `loom-paste-${randomUUID()}.${ext}`;
+  const path = join(tmpdir(), safe);
+  try {
+    writeFileSync(path, bytes);
+  } catch {
+    return null;
+  }
+  return path;
+}
 
 /**
  * Wire a WebSocket up to a claude session. The client sends RAW key / mouse /
@@ -123,6 +167,10 @@ interface ClientMsg {
   rows?: number;
   // paste
   data?: string;
+  // paste-image
+  dataBase64?: string;
+  mime?: string;
+  filename?: string;
 }
 
 function handleClientMessage(
@@ -149,7 +197,22 @@ function handleClientMessage(
       return;
     }
     case "paste": {
-      if (typeof msg.data === "string" && msg.data.length > 0) pty.write(msg.data);
+      if (typeof msg.data !== "string" || msg.data.length === 0) return;
+      // wrapBracketedPaste from @celestial/nebula wraps the text with the
+      // bracketed-paste markers (CSI 200 ~ … CSI 201 ~) so multi-line text
+      // arrives as one chunk instead of being processed as keystrokes —
+      // critical for claude's prompt to treat it as a single paste.
+      pty.write(wrapBracketedPaste(msg.data, true));
+      return;
+    }
+
+    case "paste-image": {
+      if (typeof msg.dataBase64 !== "string" || msg.dataBase64.length === 0) return;
+      const path = writePastedImageToTmp(msg.dataBase64, msg.mime ?? "image/png", msg.filename);
+      if (!path) return;
+      // Claude reads the file at the pasted path. Bracketed-paste prevents
+      // shell-style interpretation of the path's slashes / spaces.
+      pty.write(wrapBracketedPaste(path, true));
       return;
     }
     case "mouse": {

@@ -644,11 +644,29 @@ var __loomTerminalBoot = (() => {
       send({ kind: "key", key: e.key, modifiers: modifiersOf(e) });
     });
     opts.host.addEventListener("paste", (e) => {
-      const text = e.clipboardData?.getData("text") ?? "";
-      if (text) {
-        e.preventDefault();
-        send({ kind: "paste", data: text });
+      if (!e.clipboardData) return;
+      e.preventDefault();
+      for (const item of e.clipboardData.items) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const file = item.getAsFile();
+          if (!file) continue;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = typeof reader.result === "string" ? reader.result : "";
+            if (!result) return;
+            send({
+              kind: "paste-image",
+              dataBase64: result,
+              mime: file.type,
+              filename: file.name || void 0
+            });
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
       }
+      const text = e.clipboardData.getData("text") ?? "";
+      if (text) send({ kind: "paste", data: text });
     });
     opts.host.addEventListener("mousedown", (e) => {
       if (e.button !== 0 && e.button !== 1 && e.button !== 2) return;

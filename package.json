@@ -1,6 +1,6 @@
 {
   "name": "loom",
-  "version": "0.9.4",
+  "version": "0.9.5",
   "description": "Design workspace for Claude Code — chat-plus-stage workflow with tokens, components, routes, panel, forge, exports",
   "license": "MIT",
   "author": "Eric Sokolowski",
@@ -36,6 +36,7 @@
     "@celestial/beacon-browser": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/beacon-browser",
     "@celestial/forge": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/forge",
     "@celestial/lens": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/lens",
+    "@celestial/nebula": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/nebula",
     "@celestial/rift": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/rift",
     "@celestial/telescope": "link:../../../Development/celestial/.worktrees/claude-wrapper-rewire/packages/telescope",
     "@modelcontextprotocol/sdk": "^1.0.4",
