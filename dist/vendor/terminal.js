@@ -629,9 +629,22 @@ var __loomTerminalBoot = (() => {
     }
     function sendResize() {
       if (!cellMetrics) cellMetrics = measureCell();
-      const rect = opts.host.getBoundingClientRect();
-      const cols = Math.max(40, Math.floor(rect.width / cellMetrics.cellWidth));
-      const rows = Math.max(8, Math.floor(rect.height / cellMetrics.cellHeight));
+      const riftEl = opts.host.querySelector(".rift-terminal");
+      let widthPx;
+      let heightPx;
+      if (riftEl) {
+        const rect = riftEl.getBoundingClientRect();
+        widthPx = rect.width;
+        heightPx = rect.height || opts.host.clientHeight;
+      } else {
+        const cs = getComputedStyle(opts.host);
+        const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+        const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+        widthPx = opts.host.clientWidth - padX;
+        heightPx = opts.host.clientHeight - padY;
+      }
+      const cols = Math.max(40, Math.floor(widthPx / cellMetrics.cellWidth) - 1);
+      const rows = Math.max(8, Math.floor(heightPx / cellMetrics.cellHeight) - 1);
       send({ kind: "resize", cols, rows });
     }
     opts.host.tabIndex = 0;

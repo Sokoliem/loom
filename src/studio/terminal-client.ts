@@ -169,9 +169,26 @@ window.__loomTerminal = (opts: BootOptions) => {
 
   function sendResize(): void {
     if (!cellMetrics) cellMetrics = measureCell();
-    const rect = opts.host.getBoundingClientRect();
-    const cols = Math.max(40, Math.floor(rect.width / cellMetrics.cellWidth));
-    const rows = Math.max(8, Math.floor(rect.height / cellMetrics.cellHeight));
+    // Measure against the rift-terminal's own bounding box, which excludes
+    // host padding and scrollbar. Falls back to host - padding if rift isn't
+    // mounted yet. A 1-col / 1-row safety margin avoids sub-pixel edges from
+    // pushing claude's rightmost column off-screen.
+    const riftEl = opts.host.querySelector<HTMLElement>(".rift-terminal");
+    let widthPx: number;
+    let heightPx: number;
+    if (riftEl) {
+      const rect = riftEl.getBoundingClientRect();
+      widthPx = rect.width;
+      heightPx = rect.height || opts.host.clientHeight;
+    } else {
+      const cs = getComputedStyle(opts.host);
+      const padX = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const padY = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+      widthPx = opts.host.clientWidth - padX;
+      heightPx = opts.host.clientHeight - padY;
+    }
+    const cols = Math.max(40, Math.floor(widthPx / cellMetrics.cellWidth) - 1);
+    const rows = Math.max(8, Math.floor(heightPx / cellMetrics.cellHeight) - 1);
     send({ kind: "resize", cols, rows });
   }
 
