@@ -41408,7 +41408,7 @@ function parseLiteral(value) {
 
 // src/core/version.ts
 init_esm_shims();
-import { mkdirSync as mkdirSync6, readFileSync as readFileSync5, readdirSync as readdirSync4, statSync as statSync3, writeFileSync as writeFileSync5 } from "fs";
+import { mkdirSync as mkdirSync6, readFileSync as readFileSync5, readdirSync as readdirSync4, statSync as statSync3, unlinkSync, writeFileSync as writeFileSync5 } from "fs";
 import { dirname as dirname3, join as join6, relative as relative2, sep as sep2 } from "path";
 
 // src/core/hash.ts
@@ -41538,6 +41538,12 @@ function versionRestore(projectDir, id, mode = "safe") {
   const rec = versionGet(projectDir, id);
   if (mode === "force") {
     let count2 = 0;
+    const current = buildManifest(projectDir);
+    const targetPaths = new Set(Object.keys(rec.files));
+    const toDelete = [];
+    for (const f of current.files) {
+      if (!targetPaths.has(f.path)) toDelete.push(f.path);
+    }
     const txn = db.transaction(() => {
       for (const [relPath, hash] of Object.entries(rec.files)) {
         const blob = db.prepare(`SELECT content FROM file_blobs WHERE hash = ?`).get(hash);
@@ -41546,6 +41552,12 @@ function versionRestore(projectDir, id, mode = "safe") {
         mkdirSync6(dirname3(target), { recursive: true });
         writeFileSync5(target, blob.content);
         count2++;
+      }
+      for (const rel of toDelete) {
+        try {
+          unlinkSync(join6(projectDir, rel));
+        } catch {
+        }
       }
     });
     txn();

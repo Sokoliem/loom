@@ -39,6 +39,10 @@ class ActivityBus extends EventEmitter {
 }
 
 export const activityBus = new ActivityBus();
+// Each open chrome tab subscribes to its project's channel. We expect tens, not
+// thousands, but the default cap of 10 is too low — silence the warning by
+// removing the cap entirely; the GC reclaims listeners on WS close.
+activityBus.setMaxListeners(0);
 
 export function activityInsert(input: ActivityInsertInput): ActivityEvent {
   const event: ActivityEvent = {

@@ -106,14 +106,13 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
       const entries = Array.from(activityDedupe.entries()).sort((a, b) => a[1] - b[1]);
       for (let i = 0; i < entries.length / 2; i++) activityDedupe.delete(entries[i]![0]);
     }
-    const rel = path.startsWith(projectId) ? path : path;
     try {
       activityInsert({
         projectId,
-        kind: classifyFileKind(rel),
+        kind: classifyFileKind(path),
         subkind: "changed",
-        title: shortFilename(rel),
-        refPath: rel,
+        title: shortFilename(path),
+        refPath: path,
       });
     } catch {
       // best-effort; never block the watcher
@@ -538,11 +537,19 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
             ...(req.body?.name !== undefined ? { name: req.body.name } : {}),
             ...(req.body?.description !== undefined ? { description: req.body.description } : {}),
           });
+          const what =
+            req.body?.name !== undefined && req.body?.description !== undefined
+              ? "updated"
+              : req.body?.name !== undefined
+                ? "renamed"
+                : "description-updated";
+          const detail =
+            req.body?.name !== undefined ? `Renamed to ${updated.name}` : "Description updated";
           activityInsert({
             projectId: updated.id,
             kind: "session",
-            subkind: "renamed",
-            title: `Project metadata updated`,
+            subkind: what,
+            title: detail,
           });
           return { project: updated };
         } catch (err: unknown) {

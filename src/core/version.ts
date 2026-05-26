@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, statSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { ulid } from "ulid";
 import { canonicalize, sha256 } from "./hash.js";
@@ -146,6 +146,17 @@ export function versionRestore(
   const rec = versionGet(projectDir, id);
   if (mode === "force") {
     let count = 0;
+    // Files in the working tree that aren't present in the target version must
+    // be removed for the restore to be faithful — otherwise files added after
+    // the target version remain on disk and end up in the next snapshot. We
+    // constrain deletion to the same allowlist `buildManifest` walks, so we
+    // never touch ignored dirs (.loom, node_modules, .git, exports, dist).
+    const current = buildManifest(projectDir);
+    const targetPaths = new Set(Object.keys(rec.files));
+    const toDelete: string[] = [];
+    for (const f of current.files) {
+      if (!targetPaths.has(f.path)) toDelete.push(f.path);
+    }
     const txn = db.transaction(() => {
       for (const [relPath, hash] of Object.entries(rec.files)) {
         const blob = db.prepare(`SELECT content FROM file_blobs WHERE hash = ?`).get(hash) as
@@ -156,6 +167,13 @@ export function versionRestore(
         mkdirSync(dirname(target), { recursive: true });
         writeFileSync(target, blob.content);
         count++;
+      }
+      for (const rel of toDelete) {
+        try {
+          unlinkSync(join(projectDir, rel));
+        } catch {
+          // file may not exist (race with another writer); ignore
+        }
       }
     });
     txn();

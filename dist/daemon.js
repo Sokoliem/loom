@@ -63905,7 +63905,7 @@ var require_lib2 = __commonJS({
 init_esm_shims();
 var import_fastify = __toESM(require_fastify(), 1);
 var import_websocket = __toESM(require_websocket2(), 1);
-import { existsSync as existsSync7, mkdirSync as mkdirSync10, readFileSync as readFileSync9, unlinkSync, writeFileSync as writeFileSync9 } from "fs";
+import { existsSync as existsSync7, mkdirSync as mkdirSync10, readFileSync as readFileSync9, unlinkSync as unlinkSync2, writeFileSync as writeFileSync9 } from "fs";
 import { randomBytes as randomBytes2, timingSafeEqual } from "crypto";
 import { join as join13 } from "path";
 
@@ -65674,7 +65674,7 @@ import { join as join6 } from "path";
 
 // src/core/version.ts
 init_esm_shims();
-import { mkdirSync as mkdirSync3, readFileSync as readFileSync2, readdirSync, statSync, writeFileSync as writeFileSync2 } from "fs";
+import { mkdirSync as mkdirSync3, readFileSync as readFileSync2, readdirSync, statSync, unlinkSync, writeFileSync as writeFileSync2 } from "fs";
 import { dirname as dirname4, join as join5, relative as relative3, sep } from "path";
 
 // node_modules/.pnpm/ulid@2.4.0/node_modules/ulid/dist/index.esm.js
@@ -66082,15 +66082,16 @@ function projectUpdate(id, input) {
       row.name = name;
     }
   }
-  if (input.description !== void 0) {
+  if (input.name !== void 0 || input.description !== void 0) {
     const manifestPath = projectManifestPath(row.path);
     let manifest;
     try {
-      manifest = import_yaml.default.parse(readFileSync(manifestPath, "utf8"));
+      manifest = import_yaml.default.parse(readFileSync(manifestPath, "utf8")) ?? {};
     } catch {
       manifest = { name: row.name };
     }
-    manifest.description = input.description;
+    manifest.name = row.name;
+    if (input.description !== void 0) manifest.description = input.description;
     writeFileSync(manifestPath, import_yaml.default.stringify(manifest));
   }
   return rowToRecord(row);
@@ -66451,6 +66452,12 @@ function versionRestore(projectDir, id, mode = "safe") {
   const rec = versionGet(projectDir, id);
   if (mode === "force") {
     let count2 = 0;
+    const current = buildManifest(projectDir);
+    const targetPaths = new Set(Object.keys(rec.files));
+    const toDelete = [];
+    for (const f of current.files) {
+      if (!targetPaths.has(f.path)) toDelete.push(f.path);
+    }
     const txn = db.transaction(() => {
       for (const [relPath, hash] of Object.entries(rec.files)) {
         const blob = db.prepare(`SELECT content FROM file_blobs WHERE hash = ?`).get(hash);
@@ -66459,6 +66466,12 @@ function versionRestore(projectDir, id, mode = "safe") {
         mkdirSync3(dirname4(target), { recursive: true });
         writeFileSync2(target, blob.content);
         count2++;
+      }
+      for (const rel of toDelete) {
+        try {
+          unlinkSync(join5(projectDir, rel));
+        } catch {
+        }
       }
     });
     txn();
@@ -66833,6 +66846,7 @@ var ActivityBus = class extends EventEmitter2 {
   }
 };
 var activityBus = new ActivityBus();
+activityBus.setMaxListeners(0);
 function activityInsert(input) {
   const event = {
     id: ulid(),
@@ -68586,6 +68600,9 @@ function shellAfter(projectId) {
         <span class="pm-section-label">Activity</span>
         <div class="pm-activity-filters" id="pm-activity-filters">
           <button class="pm-chip active" data-kind="file">file</button>
+          <button class="pm-chip active" data-kind="route">route</button>
+          <button class="pm-chip active" data-kind="token">token</button>
+          <button class="pm-chip active" data-kind="component">component</button>
           <button class="pm-chip active" data-kind="forge">forge</button>
           <button class="pm-chip active" data-kind="panel">panel</button>
           <button class="pm-chip active" data-kind="version">version</button>
@@ -68708,7 +68725,7 @@ function panelScript(projectId, initialRoute) {
   const SECRET = window.__loomDaemonSecret;
   const hdrs = SECRET ? { "content-type": "application/json", "x-loom-secret": SECRET } : { "content-type": "application/json" };
   let currentRoute = ${JSON.stringify(initialRoute)};
-  const activeKinds = new Set(["file", "forge", "panel", "version", "session"]);
+  const activeKinds = new Set(["file", "route", "token", "component", "forge", "panel", "version", "session"]);
 
   function $(id) { return document.getElementById(id); }
   function el(tag, attrs, ...children) {
@@ -68812,7 +68829,10 @@ function panelScript(projectId, initialRoute) {
   function wireHeaderEdits() {
     const nameEl = $("pm-name-display");
     const descEl = $("pm-desc");
+    const originals = new WeakMap();
     const editable = (node) => () => {
+      // Capture the pre-edit value so a server-side rejection can roll the DOM back.
+      originals.set(node, node.textContent || "");
       node.setAttribute("contenteditable", "true");
       node.focus();
       const range = document.createRange();
@@ -68823,12 +68843,22 @@ function panelScript(projectId, initialRoute) {
     };
     const save = (field, node) => async () => {
       node.removeAttribute("contenteditable");
-      const value = node.textContent.trim();
+      const value = (node.textContent || "").trim();
+      const prior = originals.get(node) ?? "";
+      if (value === prior) return;
       try {
         const body = {};
         body[field] = value;
-        await fetch("/api/loom/projects/" + PROJECT_ID, { method: "PATCH", headers: hdrs, body: JSON.stringify(body) });
-      } catch (err) { console.error("[loom-pm] save", field, err); }
+        const r = await fetch("/api/loom/projects/" + PROJECT_ID, { method: "PATCH", headers: hdrs, body: JSON.stringify(body) });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({ error: "update failed" }));
+          node.textContent = prior;
+          alert("Update failed: " + (j.error || "HTTP " + r.status));
+        }
+      } catch (err) {
+        node.textContent = prior;
+        console.error("[loom-pm] save", field, err);
+      }
     };
     nameEl.addEventListener("click", editable(nameEl));
     nameEl.addEventListener("blur", save("name", nameEl));
@@ -69930,14 +69960,13 @@ async function startDaemon(opts = {}) {
       const entries = Array.from(activityDedupe.entries()).sort((a, b) => a[1] - b[1]);
       for (let i = 0; i < entries.length / 2; i++) activityDedupe.delete(entries[i][0]);
     }
-    const rel = path2.startsWith(projectId) ? path2 : path2;
     try {
       activityInsert({
         projectId,
-        kind: classifyFileKind(rel),
+        kind: classifyFileKind(path2),
         subkind: "changed",
-        title: shortFilename(rel),
-        refPath: rel
+        title: shortFilename(path2),
+        refPath: path2
       });
     } catch {
     }
@@ -70304,11 +70333,13 @@ async function startDaemon(opts = {}) {
             ...req.body?.name !== void 0 ? { name: req.body.name } : {},
             ...req.body?.description !== void 0 ? { description: req.body.description } : {}
           });
+          const what = req.body?.name !== void 0 && req.body?.description !== void 0 ? "updated" : req.body?.name !== void 0 ? "renamed" : "description-updated";
+          const detail = req.body?.name !== void 0 ? `Renamed to ${updated.name}` : "Description updated";
           activityInsert({
             projectId: updated.id,
             kind: "session",
-            subkind: "renamed",
-            title: `Project metadata updated`
+            subkind: what,
+            title: detail
           });
           return { project: updated };
         } catch (err) {
@@ -70527,8 +70558,8 @@ function writeRunFiles(port) {
 }
 function clearRunFiles() {
   try {
-    if (existsSync7(serverPidPath())) unlinkSync(serverPidPath());
-    if (existsSync7(serverPortPath())) unlinkSync(serverPortPath());
+    if (existsSync7(serverPidPath())) unlinkSync2(serverPidPath());
+    if (existsSync7(serverPortPath())) unlinkSync2(serverPortPath());
   } catch {
   }
 }

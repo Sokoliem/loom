@@ -176,15 +176,19 @@ export function projectUpdate(id: string, input: ProjectUpdateInput): ProjectRec
     }
   }
 
-  if (input.description !== undefined) {
+  // Re-write the manifest whenever either field changed so the on-disk YAML
+  // stays in sync with the authoritative SQLite row. Preserve any fields we
+  // don't know about (themes, features, etc.) by reading-then-mutating.
+  if (input.name !== undefined || input.description !== undefined) {
     const manifestPath = projectManifestPath(row.path);
     let manifest: ProjectManifest;
     try {
-      manifest = YAML.parse(readFileSync(manifestPath, "utf8")) as ProjectManifest;
+      manifest = (YAML.parse(readFileSync(manifestPath, "utf8")) ?? {}) as ProjectManifest;
     } catch {
       manifest = { name: row.name };
     }
-    manifest.description = input.description;
+    manifest.name = row.name; // SQLite is source of truth for the name
+    if (input.description !== undefined) manifest.description = input.description;
     writeFileSync(manifestPath, YAML.stringify(manifest));
   }
 

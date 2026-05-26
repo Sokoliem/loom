@@ -85,6 +85,9 @@ function shellAfter(projectId: string): string {
         <span class="pm-section-label">Activity</span>
         <div class="pm-activity-filters" id="pm-activity-filters">
           <button class="pm-chip active" data-kind="file">file</button>
+          <button class="pm-chip active" data-kind="route">route</button>
+          <button class="pm-chip active" data-kind="token">token</button>
+          <button class="pm-chip active" data-kind="component">component</button>
           <button class="pm-chip active" data-kind="forge">forge</button>
           <button class="pm-chip active" data-kind="panel">panel</button>
           <button class="pm-chip active" data-kind="version">version</button>
@@ -209,7 +212,7 @@ function panelScript(projectId: string, initialRoute: string): string {
   const SECRET = window.__loomDaemonSecret;
   const hdrs = SECRET ? { "content-type": "application/json", "x-loom-secret": SECRET } : { "content-type": "application/json" };
   let currentRoute = ${JSON.stringify(initialRoute)};
-  const activeKinds = new Set(["file", "forge", "panel", "version", "session"]);
+  const activeKinds = new Set(["file", "route", "token", "component", "forge", "panel", "version", "session"]);
 
   function $(id) { return document.getElementById(id); }
   function el(tag, attrs, ...children) {
@@ -313,7 +316,10 @@ function panelScript(projectId: string, initialRoute: string): string {
   function wireHeaderEdits() {
     const nameEl = $("pm-name-display");
     const descEl = $("pm-desc");
+    const originals = new WeakMap();
     const editable = (node) => () => {
+      // Capture the pre-edit value so a server-side rejection can roll the DOM back.
+      originals.set(node, node.textContent || "");
       node.setAttribute("contenteditable", "true");
       node.focus();
       const range = document.createRange();
@@ -324,12 +330,22 @@ function panelScript(projectId: string, initialRoute: string): string {
     };
     const save = (field, node) => async () => {
       node.removeAttribute("contenteditable");
-      const value = node.textContent.trim();
+      const value = (node.textContent || "").trim();
+      const prior = originals.get(node) ?? "";
+      if (value === prior) return;
       try {
         const body = {};
         body[field] = value;
-        await fetch("/api/loom/projects/" + PROJECT_ID, { method: "PATCH", headers: hdrs, body: JSON.stringify(body) });
-      } catch (err) { console.error("[loom-pm] save", field, err); }
+        const r = await fetch("/api/loom/projects/" + PROJECT_ID, { method: "PATCH", headers: hdrs, body: JSON.stringify(body) });
+        if (!r.ok) {
+          const j = await r.json().catch(() => ({ error: "update failed" }));
+          node.textContent = prior;
+          alert("Update failed: " + (j.error || "HTTP " + r.status));
+        }
+      } catch (err) {
+        node.textContent = prior;
+        console.error("[loom-pm] save", field, err);
+      }
     };
     nameEl.addEventListener("click", editable(nameEl));
     nameEl.addEventListener("blur", save("name", nameEl));
