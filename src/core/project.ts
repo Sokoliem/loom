@@ -26,11 +26,23 @@ import {
 import type { ProjectManifest, ProjectRecord } from "../types.js";
 
 let _server: SqliteDB | null = null;
-function server(): SqliteDB {
+export function server(): SqliteDB {
   if (_server) return _server;
   _server = openDb(serverDbPath());
   migrateServer(_server);
   return _server;
+}
+
+/** Test-only: close the cached server connection so a temp DB file can be removed. */
+export function _closeServerForTests(): void {
+  if (_server) {
+    try {
+      _server.close();
+    } catch {
+      // already closed
+    }
+    _server = null;
+  }
 }
 
 const ACTIVE_KEY = "active_project_id";
@@ -130,6 +142,53 @@ export function projectList(): ProjectRecord[] {
     .prepare(`SELECT * FROM projects ORDER BY last_opened_at DESC NULLS LAST`)
     .all() as ProjectRow[];
   return rows.map(rowToRecord);
+}
+
+export interface ProjectUpdateInput {
+  name?: string;
+  description?: string;
+}
+
+/**
+ * Update mutable project metadata. `name` is renamed in the projects table only
+ * (the on-disk directory is not moved — that's a much larger operation). `description`
+ * is persisted to the project's `loom.yaml` manifest, keeping the YAML as the
+ * source of truth for content the user might commit to git.
+ */
+export function projectUpdate(id: string, input: ProjectUpdateInput): ProjectRecord {
+  const row = server().prepare(`SELECT * FROM projects WHERE id = ?`).get(id) as
+    | ProjectRow
+    | undefined;
+  if (!row) throw E.notFound("project", id);
+
+  if (input.name !== undefined) {
+    const name = input.name.trim();
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+      throw E.invalid("project name", "use lowercase letters, digits, hyphens; start with a letter");
+    }
+    if (name !== row.name) {
+      const taken = server()
+        .prepare(`SELECT id FROM projects WHERE name = ? AND id != ?`)
+        .get(name, id);
+      if (taken) throw E.exists("project", name);
+      server().prepare(`UPDATE projects SET name = ? WHERE id = ?`).run(name, id);
+      row.name = name;
+    }
+  }
+
+  if (input.description !== undefined) {
+    const manifestPath = projectManifestPath(row.path);
+    let manifest: ProjectManifest;
+    try {
+      manifest = YAML.parse(readFileSync(manifestPath, "utf8")) as ProjectManifest;
+    } catch {
+      manifest = { name: row.name };
+    }
+    manifest.description = input.description;
+    writeFileSync(manifestPath, YAML.stringify(manifest));
+  }
+
+  return rowToRecord(row);
 }
 
 export function projectArchive(id: string): void {

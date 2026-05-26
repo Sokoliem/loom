@@ -96,7 +96,7 @@ var require_queue = __commonJS({
       if (!(_concurrency >= 1)) {
         throw new Error("fastqueue concurrency must be equal to or greater than 1");
       }
-      var cache2 = reusify(Task);
+      var cache3 = reusify(Task);
       var queueHead = null;
       var queueTail = null;
       var _running = 0;
@@ -175,7 +175,7 @@ var require_queue = __commonJS({
         return _running === 0 && self2.length() === 0;
       }
       function push(value, done) {
-        var current = cache2.get();
+        var current = cache3.get();
         current.context = context;
         current.release = release;
         current.value = value;
@@ -196,7 +196,7 @@ var require_queue = __commonJS({
         }
       }
       function unshift(value, done) {
-        var current = cache2.get();
+        var current = cache3.get();
         current.context = context;
         current.release = release;
         current.value = value;
@@ -218,7 +218,7 @@ var require_queue = __commonJS({
       }
       function release(holder) {
         if (holder) {
-          cache2.release(holder);
+          cache3.release(holder);
         }
         var next = queueHead;
         if (next && _running <= _concurrency) {
@@ -757,7 +757,7 @@ var require_plugin = __commonJS({
   "node_modules/.pnpm/avvio@9.2.0/node_modules/avvio/lib/plugin.js"(exports, module) {
     "use strict";
     init_esm_shims();
-    var { EventEmitter: EventEmitter2 } = __require("events");
+    var { EventEmitter: EventEmitter3 } = __require("events");
     var { inherits } = __require("util");
     var { debug } = require_debug();
     var { createPromise } = require_create_promise();
@@ -778,7 +778,7 @@ var require_plugin = __commonJS({
       this._promise = null;
       this.startTime = null;
     }
-    inherits(Plugin, EventEmitter2);
+    inherits(Plugin, EventEmitter3);
     Plugin.prototype.exec = function(server2, callback) {
       debug("exec", this.name);
       this.server = server2;
@@ -4743,7 +4743,7 @@ var require_sonic_boom = __commonJS({
     "use strict";
     init_esm_shims();
     var fs = __require("fs");
-    var EventEmitter2 = __require("events");
+    var EventEmitter3 = __require("events");
     var inherits = __require("util").inherits;
     var path2 = __require("path");
     var sleep = require_atomic_sleep();
@@ -4980,7 +4980,7 @@ var require_sonic_boom = __commonJS({
       sonic._asyncDrainScheduled = false;
       sonic.emit("drain");
     }
-    inherits(SonicBoom, EventEmitter2);
+    inherits(SonicBoom, EventEmitter3);
     function mergeBuf(bufs, len) {
       if (bufs.length === 0) {
         return kEmptyBuffer;
@@ -5558,9 +5558,9 @@ var require_thread_stream = __commonJS({
     "use strict";
     init_esm_shims();
     var { version } = require_package();
-    var { EventEmitter: EventEmitter2 } = __require("events");
+    var { EventEmitter: EventEmitter3 } = __require("events");
     var { Worker } = __require("worker_threads");
-    var { join: join12 } = __require("path");
+    var { join: join14 } = __require("path");
     var { pathToFileURL } = __require("url");
     var { wait } = require_wait();
     var {
@@ -5611,7 +5611,7 @@ var require_thread_stream = __commonJS({
     function createWorker(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join12(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join14(__dirname, "lib", "worker.js");
       const worker = new Worker(toExecute, {
         ...opts.workerOpts,
         name: opts.workerOpts?.name || "thread-stream",
@@ -5732,7 +5732,7 @@ var require_thread_stream = __commonJS({
       stream.worker.off("exit", onWorkerExit);
       destroy(stream, code !== 0 ? new Error("the worker thread exited") : null);
     }
-    var ThreadStream = class extends EventEmitter2 {
+    var ThreadStream = class extends EventEmitter3 {
       constructor(opts = {}) {
         super();
         if (opts.bufferSize < 4) {
@@ -6078,9 +6078,9 @@ var require_transport = __commonJS({
     "use strict";
     init_esm_shims();
     var { createRequire } = __require("module");
-    var { existsSync: existsSync7 } = __require("fs");
+    var { existsSync: existsSync8 } = __require("fs");
     var getCallers = require_caller();
-    var { join: join12, isAbsolute: isAbsolute2, sep: sep3 } = __require("path");
+    var { join: join14, isAbsolute: isAbsolute2, sep: sep3 } = __require("path");
     var { fileURLToPath: fileURLToPath2 } = __require("url");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
@@ -6152,7 +6152,7 @@ var require_transport = __commonJS({
           return false;
         }
       }
-      return isAbsolute2(path2) && !existsSync7(path2);
+      return isAbsolute2(path2) && !existsSync8(path2);
     }
     function stripQuotes(value) {
       const first = value[0];
@@ -6233,7 +6233,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join12(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join14(__dirname, "worker.js");
         options.targets = targets.filter((dest) => dest.target).map((dest) => {
           return {
             ...dest,
@@ -6251,7 +6251,7 @@ var require_transport = __commonJS({
           });
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-worker"] || join12(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join14(__dirname, "worker.js");
         options.pipelines = [pipeline.map((dest) => {
           return {
             ...dest,
@@ -6274,7 +6274,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join12(__dirname, "..", "file.js");
+          return join14(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -6697,12 +6697,12 @@ var require_levels = __commonJS({
     function genLsCache(instance) {
       const formatter = instance[formattersSym].level;
       const { labels } = instance.levels;
-      const cache2 = {};
+      const cache3 = {};
       for (const label in labels) {
         const level = formatter(labels[label], Number(label));
-        cache2[label] = JSON.stringify(level).slice(0, -1);
+        cache3[label] = JSON.stringify(level).slice(0, -1);
       }
-      instance[lsCacheSym] = cache2;
+      instance[lsCacheSym] = cache3;
       return instance;
     }
     function isStandardLevel(level, useOnlyCustomLevels) {
@@ -6858,7 +6858,7 @@ var require_proto = __commonJS({
   "node_modules/.pnpm/pino@10.3.1/node_modules/pino/lib/proto.js"(exports, module) {
     "use strict";
     init_esm_shims();
-    var { EventEmitter: EventEmitter2 } = __require("events");
+    var { EventEmitter: EventEmitter3 } = __require("events");
     var {
       lsCacheSym,
       levelValSym,
@@ -6939,7 +6939,7 @@ var require_proto = __commonJS({
       [getLevelSym]: getLevel,
       [setLevelSym]: setLevel
     };
-    Object.setPrototypeOf(prototype, EventEmitter2.prototype);
+    Object.setPrototypeOf(prototype, EventEmitter3.prototype);
     module.exports = function() {
       return Object.create(prototype);
     };
@@ -7261,7 +7261,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join12 = ",";
+            let join14 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -7275,7 +7275,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join12 = `,
+                join14 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -7283,13 +7283,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join12;
+                res += join14;
               }
               const tmp = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join12}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join14}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -7310,7 +7310,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join12 = `,
+              join14 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -7324,13 +7324,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join12;
+                separator = join14;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join12;
+              separator = join14;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -7371,7 +7371,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join12 = ",";
+            let join14 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -7384,7 +7384,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join12 = `,
+                join14 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -7392,13 +7392,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join12;
+                res += join14;
               }
               const tmp = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join12}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join14}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -7411,7 +7411,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join12 = `,
+              join14 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -7420,7 +7420,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join12;
+                separator = join14;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -7478,20 +7478,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join13 = `,
+              const join15 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i = 0;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyIndent(String(i), value[i], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join13;
+                res2 += join15;
               }
               const tmp = stringifyIndent(String(i), value[i], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join13}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join15}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -7507,16 +7507,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join12 = `,
+            const join14 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join12, maximumBreadth);
+              res += stringifyTypedArray(value, join14, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join12;
+              separator = join14;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -7527,13 +7527,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join12;
+                separator = join14;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join12;
+              separator = join14;
             }
             if (separator !== "") {
               res = `
@@ -7703,7 +7703,7 @@ var require_multistream = __commonJS({
         write,
         add,
         remove,
-        emit,
+        emit: emit2,
         flushSync,
         end,
         minLevel: 0,
@@ -7750,7 +7750,7 @@ var require_multistream = __commonJS({
           }
         }
       }
-      function emit(...args) {
+      function emit2(...args) {
         for (const { stream } of this.streams) {
           if (typeof stream.emit === "function") {
             stream.emit(...args);
@@ -7828,7 +7828,7 @@ var require_multistream = __commonJS({
           minLevel: level,
           streams,
           clone,
-          emit,
+          emit: emit2,
           flushSync,
           [metadata]: true
         };
@@ -11253,7 +11253,7 @@ var require_context = __commonJS({
     function Context({
       schema,
       handler,
-      config,
+      config: config2,
       requestIdLogLabel,
       childLoggerFactory,
       errorHandler,
@@ -11284,7 +11284,7 @@ var require_context = __commonJS({
       this.onResponse = null;
       this.preSerialization = null;
       this.onRequestAbort = null;
-      this.config = config;
+      this.config = config2;
       this.errorHandler = errorHandler || server2[kErrorHandler];
       this.requestIdLogLabel = requestIdLogLabel || server2[kOptions].requestIdLogLabel;
       this.childLoggerFactory = childLoggerFactory || server2[kChildLoggerFactory];
@@ -25673,7 +25673,7 @@ var require_range = __commonJS({
         range = range.replace(BUILDSTRIPRE, "");
         const memoOpts = (this.options.includePrerelease && FLAG_INCLUDE_PRERELEASE) | (this.options.loose && FLAG_LOOSE);
         const memoKey = memoOpts + ":" + range;
-        const cached = cache2.get(memoKey);
+        const cached = cache3.get(memoKey);
         if (cached) {
           return cached;
         }
@@ -25707,7 +25707,7 @@ var require_range = __commonJS({
           rangeMap.delete("");
         }
         const result = [...rangeMap.values()];
-        cache2.set(memoKey, result);
+        cache3.set(memoKey, result);
         return result;
       }
       intersects(range, options) {
@@ -25746,7 +25746,7 @@ var require_range = __commonJS({
     };
     module.exports = Range;
     var LRU = require_lrucache();
-    var cache2 = new LRU();
+    var cache3 = new LRU();
     var parseOptions = require_parse_options();
     var Comparator = require_comparator();
     var debug = require_debug2();
@@ -26705,12 +26705,12 @@ var require_plugin_utils = __commonJS({
       if (display) {
         return display;
       }
-      const cache2 = __require.cache;
-      if (cache2) {
-        const keys = Object.keys(cache2);
+      const cache3 = __require.cache;
+      if (cache3) {
+        const keys = Object.keys(cache3);
         for (let i = 0; i < keys.length; i++) {
           const key = keys[i];
-          if (cache2[key].exports === func) {
+          if (cache3[key].exports === func) {
             return key;
           }
         }
@@ -30324,7 +30324,7 @@ var require_route = __commonJS({
             }
           }
           const constraints = opts.constraints || {};
-          const config = {
+          const config2 = {
             ...opts.config,
             url,
             method: opts.method
@@ -30332,7 +30332,7 @@ var require_route = __commonJS({
           const context = new Context({
             schema: opts.schema,
             handler: opts.handler.bind(this),
-            config,
+            config: config2,
             errorHandler: opts.errorHandler,
             childLoggerFactory: opts.childLoggerFactory,
             bodyLimit: opts.bodyLimit,
@@ -32424,7 +32424,7 @@ var require_request2 = __commonJS({
     var { createDeprecation } = require_process_warning2();
     var parseURL = require_parse_url();
     var { isFormDataLike, formDataToStream } = require_form_data();
-    var { EventEmitter: EventEmitter2 } = __require("events");
+    var { EventEmitter: EventEmitter3 } = __require("events");
     var FST_LIGHTMYREQUEST_DEP01 = createDeprecation({
       name: "FastifyDeprecationLightMyRequest",
       code: "FST_LIGHTMYREQUEST_DEP01",
@@ -32433,7 +32433,7 @@ var require_request2 = __commonJS({
     function hostHeaderFromURL(parsedURL) {
       return parsedURL.port ? parsedURL.host : parsedURL.hostname + (parsedURL.protocol === "https:" ? ":443" : ":80");
     }
-    var MockSocket = class extends EventEmitter2 {
+    var MockSocket = class extends EventEmitter3 {
       constructor(remoteAddress) {
         super();
         this.remoteAddress = remoteAddress;
@@ -37122,7 +37122,7 @@ var require_websocket = __commonJS({
   "node_modules/.pnpm/ws@8.21.0/node_modules/ws/lib/websocket.js"(exports, module) {
     "use strict";
     init_esm_shims();
-    var EventEmitter2 = __require("events");
+    var EventEmitter3 = __require("events");
     var https = __require("https");
     var http = __require("http");
     var net = __require("net");
@@ -37154,7 +37154,7 @@ var require_websocket = __commonJS({
     var protocolVersions = [8, 13];
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
-    var WebSocket = class _WebSocket extends EventEmitter2 {
+    var WebSocket = class _WebSocket extends EventEmitter3 {
       /**
        * Create a new `WebSocket`.
        *
@@ -38164,7 +38164,7 @@ var require_websocket_server = __commonJS({
   "node_modules/.pnpm/ws@8.21.0/node_modules/ws/lib/websocket-server.js"(exports, module) {
     "use strict";
     init_esm_shims();
-    var EventEmitter2 = __require("events");
+    var EventEmitter3 = __require("events");
     var http = __require("http");
     var { Duplex } = __require("stream");
     var { createHash: createHash3 } = __require("crypto");
@@ -38177,7 +38177,7 @@ var require_websocket_server = __commonJS({
     var RUNNING = 0;
     var CLOSING = 1;
     var CLOSED = 2;
-    var WebSocketServer = class extends EventEmitter2 {
+    var WebSocketServer = class extends EventEmitter3 {
       /**
        * Create a `WebSocketServer` instance.
        *
@@ -38721,7 +38721,7 @@ var require_buffer_list = __commonJS({
         }
       }, {
         key: "join",
-        value: function join12(s) {
+        value: function join14(s) {
           if (this.length === 0) return "";
           var p = this.head;
           var ret = "" + p.data;
@@ -63905,9 +63905,9 @@ var require_lib2 = __commonJS({
 init_esm_shims();
 var import_fastify = __toESM(require_fastify(), 1);
 var import_websocket = __toESM(require_websocket2(), 1);
-import { existsSync as existsSync6, mkdirSync as mkdirSync8, readFileSync as readFileSync8, unlinkSync, writeFileSync as writeFileSync8 } from "fs";
+import { existsSync as existsSync7, mkdirSync as mkdirSync10, readFileSync as readFileSync9, unlinkSync, writeFileSync as writeFileSync9 } from "fs";
 import { randomBytes as randomBytes2, timingSafeEqual } from "crypto";
-import { join as join11 } from "path";
+import { join as join13 } from "path";
 
 // src/core/paths.ts
 init_esm_shims();
@@ -63931,6 +63931,9 @@ function serverPortPath() {
 function projectDbPath(projectDir) {
   return join(projectDir, ".loom", "project.sqlite");
 }
+function projectSecretPath(projectDir) {
+  return join(projectDir, ".loom", "secret");
+}
 function projectManifestPath(projectDir) {
   return join(projectDir, "loom.yaml");
 }
@@ -63949,8 +63952,23 @@ function mockDataDir(projectDir) {
 function assetsDir(projectDir) {
   return join(projectDir, "assets");
 }
+function exportsDir(projectDir) {
+  return join(projectDir, "exports");
+}
 function loomCacheDir(projectDir) {
   return join(projectDir, ".loom");
+}
+function snapshotsDir(projectDir) {
+  return join(loomCacheDir(projectDir), "snapshots");
+}
+function forgeDir(projectDir) {
+  return join(loomCacheDir(projectDir), "forge");
+}
+function validationDir(projectDir) {
+  return join(loomCacheDir(projectDir), "validation");
+}
+function defaultProjectRoot() {
+  return process.env.LOOM_PROJECT_ROOT ?? join(homedir(), "loom");
 }
 
 // src/core/watcher.ts
@@ -64688,9 +64706,9 @@ var NodeFsHandler = class {
     if (this.fsw.closed) {
       return;
     }
-    const dirname6 = sysPath.dirname(file);
+    const dirname7 = sysPath.dirname(file);
     const basename3 = sysPath.basename(file);
-    const parent = this.fsw._getWatchedDir(dirname6);
+    const parent = this.fsw._getWatchedDir(dirname7);
     let prevStats = stats;
     if (parent.has(basename3))
       return;
@@ -64717,7 +64735,7 @@ var NodeFsHandler = class {
             prevStats = newStats2;
           }
         } catch (error) {
-          this.fsw._remove(dirname6, basename3);
+          this.fsw._remove(dirname7, basename3);
         }
       } else if (parent.has(basename3)) {
         const at = newStats.atimeMs;
@@ -65804,7 +65822,7 @@ var E = {
 
 // src/core/project.ts
 init_esm_shims();
-import { existsSync, mkdirSync as mkdirSync2, writeFileSync } from "fs";
+import { existsSync, mkdirSync as mkdirSync2, writeFileSync, readFileSync } from "fs";
 import { join as join4 } from "path";
 var import_yaml = __toESM(require_dist5(), 1);
 import { randomBytes } from "crypto";
@@ -65812,6 +65830,29 @@ import { randomBytes } from "crypto";
 // src/utils/execFileNoThrow.ts
 init_esm_shims();
 import { execFile } from "child_process";
+function execFileNoThrow(cmd, args, cwd, env) {
+  return new Promise((resolve4) => {
+    execFile(
+      cmd,
+      args,
+      {
+        cwd,
+        env: env ?? process.env,
+        shell: false,
+        windowsHide: true,
+        maxBuffer: 32 * 1024 * 1024
+      },
+      (err, stdout, stderr) => {
+        const code = err && typeof err.code === "number" ? err.code : err ? 1 : 0;
+        resolve4({
+          code,
+          stdout: stdout?.toString() ?? "",
+          stderr: stderr?.toString() ?? ""
+        });
+      }
+    );
+  });
+}
 
 // src/core/db.ts
 init_esm_shims();
@@ -65839,7 +65880,20 @@ var SERVER_SCHEMA = [
     payload_json TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_telemetry_ts ON telemetry_events(ts)`,
-  `CREATE INDEX IF NOT EXISTS idx_telemetry_type ON telemetry_events(event_type)`
+  `CREATE INDEX IF NOT EXISTS idx_telemetry_type ON telemetry_events(event_type)`,
+  `CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subkind TEXT,
+    title TEXT NOT NULL,
+    ref_path TEXT,
+    ref_id TEXT,
+    payload TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_activity_project_created
+    ON activity_events(project_id, created_at DESC)`
 ];
 var PROJECT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS versions (
@@ -65948,6 +66002,16 @@ function readActive() {
   const row = server().prepare(`SELECT value FROM server_state WHERE key = ?`).get(ACTIVE_KEY);
   return row?.value ?? null;
 }
+function writeActive(id) {
+  if (id === null) {
+    server().prepare(`DELETE FROM server_state WHERE key = ?`).run(ACTIVE_KEY);
+  } else {
+    server().prepare(
+      `INSERT INTO server_state (key, value) VALUES (?, ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).run(ACTIVE_KEY, id);
+  }
+}
 var _projectDbs = /* @__PURE__ */ new Map();
 function projectDb(projectDir) {
   const cached = _projectDbs.get(projectDir);
@@ -65957,9 +66021,85 @@ function projectDb(projectDir) {
   _projectDbs.set(projectDir, db);
   return db;
 }
+async function projectCreate(input) {
+  const name = input.name.trim();
+  if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+    throw E.invalid("project name", "use lowercase letters, digits, hyphens; start with a letter");
+  }
+  const existing = server().prepare(`SELECT id FROM projects WHERE name = ?`).get(name);
+  if (existing) throw E.exists("project", name);
+  const path2 = input.path ?? join4(defaultProjectRoot(), name);
+  if (existsSync(path2)) {
+    throw E.exists("project directory", path2);
+  }
+  mkdirSync2(path2, { recursive: true });
+  scaffoldProject(path2, name, input.template ?? "shadcn-starter");
+  await initGit(path2);
+  const id = ulid();
+  const now = Date.now();
+  server().prepare(
+    `INSERT INTO projects (id, name, path, created_at, last_opened_at) VALUES (?, ?, ?, ?, ?)`
+  ).run(id, name, path2, now, now);
+  writeActive(id);
+  const db = projectDb(path2);
+  db.prepare(
+    `INSERT INTO branches (name, head_version_id, created_at, protected) VALUES (?, ?, ?, ?)`
+  ).run("main", "init", now, 1);
+  return {
+    id,
+    name,
+    path: path2,
+    createdAt: now,
+    lastOpenedAt: now,
+    archived: false
+  };
+}
+function projectOpen(nameOrId) {
+  const row = server().prepare(`SELECT * FROM projects WHERE name = ? OR id = ?`).get(nameOrId, nameOrId);
+  if (!row) throw E.notFound("project", nameOrId);
+  const now = Date.now();
+  server().prepare(`UPDATE projects SET last_opened_at = ? WHERE id = ?`).run(now, row.id);
+  writeActive(row.id);
+  projectDb(row.path);
+  return rowToRecord({ ...row, last_opened_at: now });
+}
 function projectList() {
   const rows = server().prepare(`SELECT * FROM projects ORDER BY last_opened_at DESC NULLS LAST`).all();
   return rows.map(rowToRecord);
+}
+function projectUpdate(id, input) {
+  const row = server().prepare(`SELECT * FROM projects WHERE id = ?`).get(id);
+  if (!row) throw E.notFound("project", id);
+  if (input.name !== void 0) {
+    const name = input.name.trim();
+    if (!/^[a-z][a-z0-9-]*$/.test(name)) {
+      throw E.invalid("project name", "use lowercase letters, digits, hyphens; start with a letter");
+    }
+    if (name !== row.name) {
+      const taken = server().prepare(`SELECT id FROM projects WHERE name = ? AND id != ?`).get(name, id);
+      if (taken) throw E.exists("project", name);
+      server().prepare(`UPDATE projects SET name = ? WHERE id = ?`).run(name, id);
+      row.name = name;
+    }
+  }
+  if (input.description !== void 0) {
+    const manifestPath = projectManifestPath(row.path);
+    let manifest;
+    try {
+      manifest = import_yaml.default.parse(readFileSync(manifestPath, "utf8"));
+    } catch {
+      manifest = { name: row.name };
+    }
+    manifest.description = input.description;
+    writeFileSync(manifestPath, import_yaml.default.stringify(manifest));
+  }
+  return rowToRecord(row);
+}
+function projectArchive(id) {
+  const row = server().prepare(`SELECT id FROM projects WHERE id = ?`).get(id);
+  if (!row) throw E.notFound("project", id);
+  server().prepare(`UPDATE projects SET archived = 1 WHERE id = ?`).run(id);
+  if (readActive() === id) writeActive(null);
 }
 function projectCurrent() {
   const active = readActive();
@@ -65981,6 +66121,231 @@ function rowToRecord(row) {
     lastOpenedAt: row.last_opened_at,
     archived: row.archived === 1
   };
+}
+function scaffoldProject(path2, name, template) {
+  mkdirSync2(tokensDir(path2), { recursive: true });
+  mkdirSync2(componentsDir(path2), { recursive: true });
+  mkdirSync2(routesDir(path2), { recursive: true });
+  mkdirSync2(mockDataDir(path2), { recursive: true });
+  mkdirSync2(assetsDir(path2), { recursive: true });
+  mkdirSync2(join4(assetsDir(path2), "images"), { recursive: true });
+  mkdirSync2(join4(assetsDir(path2), "fonts"), { recursive: true });
+  mkdirSync2(exportsDir(path2), { recursive: true });
+  mkdirSync2(loomCacheDir(path2), { recursive: true });
+  mkdirSync2(snapshotsDir(path2), { recursive: true });
+  mkdirSync2(validationDir(path2), { recursive: true });
+  mkdirSync2(forgeDir(path2), { recursive: true });
+  const manifest = {
+    name,
+    description: `${name} \u2014 loom project`,
+    themes: ["light", "dark"],
+    default_theme: "light",
+    features: {
+      hook_order_change_warning: true,
+      deterministic_lint: true,
+      auto_snapshots: true
+    }
+  };
+  writeFileSync(projectManifestPath(path2), import_yaml.default.stringify(manifest));
+  writeFileSync(projectSecretPath(path2), randomBytes(32).toString("hex"));
+  writeFileSync(
+    join4(loomCacheDir(path2), ".gitignore"),
+    "snapshots/\nvalidation/\nforge/\n*.sqlite\n*.sqlite-*\nmanifest-hash\n"
+  );
+  writeFileSync(
+    join4(path2, ".gitignore"),
+    "node_modules/\nexports/\n.loom/snapshots/\n.loom/validation/\n.loom/forge/\n.loom/*.sqlite\n.loom/*.sqlite-*\n.loom/manifest-hash\n"
+  );
+  if (template === "shadcn-starter") {
+    writeShadcnStarter(path2);
+  } else {
+    writeBlankStarter(path2);
+  }
+}
+function writeShadcnStarter(path2) {
+  writeFileSync(
+    join4(tokensDir(path2), "color.yaml"),
+    import_yaml.default.stringify({
+      seed: { hue: 250, chroma: 0.2 },
+      accent: {
+        primary: "oklch(0.65 {seed.chroma} {seed.hue})",
+        muted: "oklch(0.85 0.05 {seed.hue})"
+      },
+      text: {
+        primary: "oklch(0.20 0.02 {seed.hue})",
+        muted: "oklch(0.45 0.02 {seed.hue})"
+      },
+      surface: {
+        base: "oklch(0.98 0.01 {seed.hue})",
+        card: "oklch(0.99 0.005 {seed.hue})"
+      },
+      border: { subtle: "oklch(0.92 0.01 {seed.hue})" }
+    })
+  );
+  writeFileSync(
+    join4(tokensDir(path2), "typography.yaml"),
+    import_yaml.default.stringify({
+      family: {
+        sans: "'Inter', system-ui, sans-serif",
+        mono: "'JetBrains Mono', ui-monospace, monospace"
+      },
+      size: {
+        xs: "12px",
+        sm: "14px",
+        base: "16px",
+        lg: "18px",
+        xl: "24px",
+        "2xl": "32px",
+        "3xl": "48px"
+      },
+      weight: { regular: 400, medium: 500, semibold: 600, bold: 700 },
+      leading: { tight: 1.15, normal: 1.5, relaxed: 1.7 }
+    })
+  );
+  writeFileSync(
+    join4(tokensDir(path2), "spacing.yaml"),
+    import_yaml.default.stringify({
+      "0": "0px",
+      "1": "4px",
+      "2": "8px",
+      "3": "12px",
+      "4": "16px",
+      "5": "20px",
+      "6": "24px",
+      "8": "32px",
+      "10": "40px",
+      "12": "48px",
+      "16": "64px"
+    })
+  );
+  writeFileSync(
+    join4(tokensDir(path2), "radius.yaml"),
+    import_yaml.default.stringify({ none: "0px", sm: "4px", md: "8px", lg: "12px", xl: "16px", full: "9999px" })
+  );
+  writeFileSync(
+    join4(tokensDir(path2), "motion.yaml"),
+    import_yaml.default.stringify({
+      duration: { fast: "120ms", base: "200ms", slow: "320ms" },
+      easing: { out: "cubic-bezier(0.16, 1, 0.3, 1)", inOut: "cubic-bezier(0.65, 0, 0.35, 1)" }
+    })
+  );
+  writeFileSync(
+    join4(tokensDir(path2), "theme.yaml"),
+    import_yaml.default.stringify({
+      light: { background: "{surface.base}", foreground: "{text.primary}" },
+      dark: {
+        background: "oklch(0.18 0.02 {seed.hue})",
+        foreground: "oklch(0.95 0.01 {seed.hue})"
+      }
+    })
+  );
+  mkdirSync2(join4(componentsDir(path2), "Button"), { recursive: true });
+  writeFileSync(
+    join4(componentsDir(path2), "Button", "Button.tsx"),
+    `import { type ButtonHTMLAttributes, type ReactNode } from "react";
+
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "ghost";
+  children: ReactNode;
+}
+
+export function Button({ variant = "primary", className = "", children, ...rest }: ButtonProps) {
+  const base = "inline-flex items-center justify-center rounded-md font-medium transition-colors px-4 py-2";
+  const variants: Record<string, string> = {
+    primary: "bg-[var(--accent-primary)] text-white hover:opacity-90",
+    secondary: "bg-[var(--surface-card)] text-[var(--text-primary)] border border-[var(--border-subtle)]",
+    ghost: "bg-transparent text-[var(--text-primary)] hover:bg-[var(--surface-card)]",
+  };
+  return (
+    <button className={\`\${base} \${variants[variant]} \${className}\`} {...rest}>
+      {children}
+    </button>
+  );
+}
+`
+  );
+  writeFileSync(
+    join4(componentsDir(path2), "Button", "Button.spec.md"),
+    `# Button
+
+Primary call-to-action. Three variants: primary, secondary, ghost.
+`
+  );
+  writeFileSync(
+    join4(componentsDir(path2), "Button", "Button.tokens.yaml"),
+    import_yaml.default.stringify({ uses: ["accent.primary", "surface.card", "text.primary", "border.subtle"] })
+  );
+  writeFileSync(
+    join4(componentsDir(path2), "Button", "Button.a11y.yaml"),
+    import_yaml.default.stringify({
+      requires: { contrast_ratio: 4.5, focus_visible: true, keyboard_activates: true }
+    })
+  );
+  writeFileSync(
+    join4(componentsDir(path2), "Button", "Button.stories.mdx"),
+    `import { Button } from "./Button";
+
+# Button
+
+<Button variant="primary">Primary</Button>
+<Button variant="secondary">Secondary</Button>
+<Button variant="ghost">Ghost</Button>
+`
+  );
+  writeFileSync(
+    join4(routesDir(path2), "_layout.tsx"),
+    `import type { ReactNode } from "react";
+
+export default function Layout({ children }: { children: ReactNode }) {
+  return (
+    <div style={{
+      fontFamily: "var(--font-family-sans, system-ui)",
+      color: "var(--text-primary)",
+      background: "var(--surface-base)",
+      minHeight: "100vh",
+    }}>
+      {children}
+    </div>
+  );
+}
+`
+  );
+  writeFileSync(
+    join4(routesDir(path2), "index.tsx"),
+    `import { Button } from "../components/Button/Button";
+
+export default function Home() {
+  return (
+    <main style={{ padding: "var(--spacing-8, 32px)" }}>
+      <h1>Welcome to ${path2.split(/[\\/]/).pop()}</h1>
+      <p>Edit routes/index.tsx to get started.</p>
+      <Button>Get started</Button>
+    </main>
+  );
+}
+`
+  );
+}
+function writeBlankStarter(path2) {
+  writeFileSync(
+    join4(tokensDir(path2), "color.yaml"),
+    import_yaml.default.stringify({ accent: { primary: "oklch(0.65 0.2 250)" } })
+  );
+  writeFileSync(
+    join4(routesDir(path2), "index.tsx"),
+    `export default function Home() { return <main>Hello</main>; }
+`
+  );
+}
+async function initGit(path2) {
+  const r1 = await execFileNoThrow("git", ["init", "-q"], path2);
+  if (r1.code !== 0) return;
+  await execFileNoThrow("git", ["add", "-A"], path2);
+  await execFileNoThrow(
+    "git",
+    ["-c", "user.email=loom@local", "-c", "user.name=loom", "commit", "-q", "-m", "loom: init"],
+    path2
+  );
 }
 
 // src/core/version.ts
@@ -66081,11 +66446,54 @@ function isProbablyBinary(buf) {
   }
   return false;
 }
+function versionRestore(projectDir, id, mode = "safe") {
+  const db = projectDb(projectDir);
+  const rec = versionGet(projectDir, id);
+  if (mode === "force") {
+    let count2 = 0;
+    const txn = db.transaction(() => {
+      for (const [relPath, hash] of Object.entries(rec.files)) {
+        const blob = db.prepare(`SELECT content FROM file_blobs WHERE hash = ?`).get(hash);
+        if (!blob) continue;
+        const target = join5(projectDir, relPath);
+        mkdirSync3(dirname4(target), { recursive: true });
+        writeFileSync2(target, blob.content);
+        count2++;
+      }
+    });
+    txn();
+    return { restored: count2, mode: "force" };
+  }
+  const stagingRoot = join5(projectDir, ".loom", "restore", id);
+  let count = 0;
+  for (const [relPath, hash] of Object.entries(rec.files)) {
+    const blob = db.prepare(`SELECT content FROM file_blobs WHERE hash = ?`).get(hash);
+    if (!blob) continue;
+    const target = join5(stagingRoot, relPath);
+    mkdirSync3(dirname4(target), { recursive: true });
+    writeFileSync2(target, blob.content);
+    count++;
+  }
+  return { restored: count, mode: "safe" };
+}
+function versionRestoreWithAutoSnapshot(projectDir, branch, targetId) {
+  const snapshot = versionSnapshot(projectDir, branch, {
+    label: "auto-snapshot before restore",
+    createdBy: "user"
+  });
+  const restore = versionRestore(projectDir, targetId, "force");
+  return { snapshotId: snapshot.id, restored: restore.restored };
+}
 function versionGet(projectDir, id) {
   const db = projectDb(projectDir);
   const row = db.prepare(`SELECT * FROM versions WHERE id = ?`).get(id);
   if (!row) throw E.notFound("version", id);
   return rowToVersion(row);
+}
+function versionList(projectDir, limit = 50) {
+  const db = projectDb(projectDir);
+  const rows = db.prepare(`SELECT * FROM versions ORDER BY created_at DESC LIMIT ?`).all(limit);
+  return rows.map(rowToVersion);
 }
 function rowToVersion(row) {
   return {
@@ -66217,33 +66625,98 @@ function extractMeta(source) {
   }
 }
 
-// src/studio/server.ts
+// src/core/components.ts
 init_esm_shims();
-import { createServer as createViteServer } from "vite";
-import react from "@vitejs/plugin-react";
-import { resolve as resolve3 } from "path";
+var import_yaml2 = __toESM(require_dist5(), 1);
+import { existsSync as existsSync4, mkdirSync as mkdirSync6, readFileSync as readFileSync5, readdirSync as readdirSync3, rmSync as rmSync2, statSync as statSync3, writeFileSync as writeFileSync5 } from "fs";
+import { join as join8 } from "path";
 
-// src/studio/tokens-to-css.ts
+// src/validate/hook-order.ts
 init_esm_shims();
+
+// src/validate/ast-utils.ts
+init_esm_shims();
+var babelParser = __toESM(require_lib2(), 1);
+function parseFile(source) {
+  return babelParser.parse(source, {
+    sourceType: "module",
+    allowImportExportEverywhere: true,
+    allowReturnOutsideFunction: true,
+    errorRecovery: true,
+    plugins: ["jsx", "typescript", "classProperties", "decorators-legacy", "topLevelAwait"]
+  });
+}
+function walkAll(root, visitor) {
+  const stack = [{ node: root, parent: null }];
+  while (stack.length > 0) {
+    const { node, parent } = stack.pop();
+    const r = visitor(node, parent);
+    if (r === false) continue;
+    for (const key of Object.keys(node)) {
+      if (key === "loc" || key === "start" || key === "end" || key === "type" || key === "raw") continue;
+      const val = node[key];
+      if (val && typeof val === "object") {
+        if (Array.isArray(val)) {
+          for (const item of val) {
+            if (item && typeof item === "object" && typeof item.type === "string") {
+              stack.push({ node: item, parent: node });
+            }
+          }
+        } else if (typeof val.type === "string") {
+          stack.push({ node: val, parent: node });
+        }
+      }
+    }
+  }
+}
+
+// src/core/components.ts
+var NAME_RE = /^[A-Z][A-Za-z0-9]*$/;
+function componentGet(projectDir, name) {
+  const dir = join8(componentsDir(projectDir), name);
+  if (!existsSync4(dir)) throw E.notFound("component", name);
+  return {
+    name,
+    hasComponent: existsSync4(join8(dir, `${name}.tsx`)),
+    hasSpec: existsSync4(join8(dir, `${name}.spec.md`)),
+    hasTokens: existsSync4(join8(dir, `${name}.tokens.yaml`)),
+    hasA11y: existsSync4(join8(dir, `${name}.a11y.yaml`)),
+    hasStories: existsSync4(join8(dir, `${name}.stories.mdx`)),
+    path: dir
+  };
+}
+function componentList(projectDir, filter) {
+  const dir = componentsDir(projectDir);
+  if (!existsSync4(dir)) return [];
+  const out = [];
+  for (const entry of readdirSync3(dir)) {
+    const full = join8(dir, entry);
+    if (!statSync3(full).isDirectory()) continue;
+    if (!NAME_RE.test(entry)) continue;
+    if (filter && !entry.toLowerCase().includes(filter.toLowerCase())) continue;
+    out.push(componentGet(projectDir, entry));
+  }
+  return out;
+}
 
 // src/core/tokens.ts
 init_esm_shims();
-var import_yaml2 = __toESM(require_dist5(), 1);
-import { existsSync as existsSync4, mkdirSync as mkdirSync6, readFileSync as readFileSync5, readdirSync as readdirSync3, writeFileSync as writeFileSync5 } from "fs";
-import { join as join8 } from "path";
+var import_yaml3 = __toESM(require_dist5(), 1);
+import { existsSync as existsSync5, mkdirSync as mkdirSync7, readFileSync as readFileSync6, readdirSync as readdirSync4, writeFileSync as writeFileSync6 } from "fs";
+import { join as join9 } from "path";
 var REF_RE = /\{([a-zA-Z_][\w.]*)\}/g;
 function loadTokens(projectDir) {
   const dir = tokensDir(projectDir);
   const trees = {};
   const flat = /* @__PURE__ */ new Map();
-  if (!existsSync4(dir)) {
+  if (!existsSync5(dir)) {
     return { trees, flat };
   }
-  for (const file of readdirSync3(dir)) {
+  for (const file of readdirSync4(dir)) {
     if (!file.endsWith(".yaml") && !file.endsWith(".yml")) continue;
     const namespace = file.replace(/\.ya?ml$/, "");
-    const raw = readFileSync5(join8(dir, file), "utf8");
-    const parsed = import_yaml2.default.parse(raw) ?? {};
+    const raw = readFileSync6(join9(dir, file), "utf8");
+    const parsed = import_yaml3.default.parse(raw) ?? {};
     trees[namespace] = parsed;
     flattenInto(flat, parsed, namespace);
   }
@@ -66284,7 +66757,202 @@ function resolveAll(flat) {
   return out;
 }
 
+// src/core/git.ts
+init_esm_shims();
+import { execFile as execFile2 } from "child_process";
+var CACHE_TTL_MS = 2e3;
+var TIMEOUT_MS = 2e3;
+var cache = /* @__PURE__ */ new Map();
+async function gitStatus(projectPath) {
+  const cached = cache.get(projectPath);
+  if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+    return { ...cached.value, cached: true };
+  }
+  const fresh = await runGitStatus(projectPath);
+  cache.set(projectPath, { at: Date.now(), value: fresh });
+  return fresh;
+}
+function runGitStatus(projectPath) {
+  return new Promise((resolve4) => {
+    execFile2(
+      "git",
+      ["status", "--porcelain=v2", "--branch"],
+      {
+        cwd: projectPath,
+        env: process.env,
+        shell: false,
+        windowsHide: true,
+        timeout: TIMEOUT_MS,
+        maxBuffer: 4 * 1024 * 1024
+      },
+      (err, stdout) => {
+        if (err) {
+          resolve4({ branch: null, dirty: false, ahead: 0, behind: 0, stale: true });
+          return;
+        }
+        resolve4(parsePorcelainV2(stdout?.toString() ?? ""));
+      }
+    );
+  });
+}
+function parsePorcelainV2(out) {
+  let branch = null;
+  let ahead = 0;
+  let behind = 0;
+  let dirty = false;
+  for (const rawLine of out.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith("# branch.head ")) {
+      const head = line.slice("# branch.head ".length).trim();
+      branch = head === "(detached)" ? null : head;
+    } else if (line.startsWith("# branch.ab ")) {
+      const m = line.match(/\+(\d+) -(\d+)/);
+      if (m) {
+        ahead = Number(m[1]);
+        behind = Number(m[2]);
+      }
+    } else if (line.startsWith("# ")) {
+    } else {
+      dirty = true;
+    }
+  }
+  return { branch, dirty, ahead, behind };
+}
+
+// src/core/activity.ts
+init_esm_shims();
+import { EventEmitter as EventEmitter2 } from "events";
+var MAX_PER_PROJECT = 1e3;
+var TRIM_BATCH_INTERVAL = 50;
+var _inserts = 0;
+var ActivityBus = class extends EventEmitter2 {
+  emitEvent(event) {
+    this.emit("event", event);
+    this.emit(`event:${event.projectId}`, event);
+  }
+};
+var activityBus = new ActivityBus();
+function activityInsert(input) {
+  const event = {
+    id: ulid(),
+    projectId: input.projectId,
+    kind: input.kind,
+    subkind: input.subkind ?? null,
+    title: input.title,
+    refPath: input.refPath ?? null,
+    refId: input.refId ?? null,
+    payload: input.payload ?? null,
+    createdAt: input.createdAt ?? Date.now()
+  };
+  server().prepare(
+    `INSERT INTO activity_events (id, project_id, kind, subkind, title, ref_path, ref_id, payload, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).run(
+    event.id,
+    event.projectId,
+    event.kind,
+    event.subkind,
+    event.title,
+    event.refPath,
+    event.refId,
+    event.payload ? JSON.stringify(event.payload) : null,
+    event.createdAt
+  );
+  _inserts += 1;
+  if (_inserts % TRIM_BATCH_INTERVAL === 0) {
+    activityTrim(event.projectId);
+  }
+  activityBus.emitEvent(event);
+  return event;
+}
+function activityList(projectId, opts = {}) {
+  const limit = Math.max(1, Math.min(opts.limit ?? 50, 500));
+  const kinds = opts.kinds && opts.kinds.length > 0 ? [...opts.kinds] : null;
+  const stmt = kinds ? server().prepare(
+    `SELECT * FROM activity_events
+         WHERE project_id = ?
+           AND kind IN (${kinds.map(() => "?").join(",")})
+         ORDER BY created_at DESC
+         LIMIT ?`
+  ) : server().prepare(
+    `SELECT * FROM activity_events
+         WHERE project_id = ?
+         ORDER BY created_at DESC
+         LIMIT ?`
+  );
+  const rows = kinds ? stmt.all(projectId, ...kinds, limit) : stmt.all(projectId, limit);
+  return rows.map(rowToEvent);
+}
+function activityTrim(projectId, max = MAX_PER_PROJECT) {
+  const result = server().prepare(
+    `DELETE FROM activity_events
+       WHERE project_id = ?
+         AND id NOT IN (
+           SELECT id FROM activity_events
+           WHERE project_id = ?
+           ORDER BY created_at DESC
+           LIMIT ?
+         )`
+  ).run(projectId, projectId, max);
+  return result.changes;
+}
+function rowToEvent(row) {
+  return {
+    id: row.id,
+    projectId: row.project_id,
+    kind: row.kind,
+    subkind: row.subkind,
+    title: row.title,
+    refPath: row.ref_path,
+    refId: row.ref_id,
+    payload: row.payload ? JSON.parse(row.payload) : null,
+    createdAt: row.created_at
+  };
+}
+
+// src/core/telemetry.ts
+init_esm_shims();
+import { appendFileSync, mkdirSync as mkdirSync8 } from "fs";
+import { dirname as dirname6, join as join10 } from "path";
+
+// src/config.ts
+init_esm_shims();
+function flag(name) {
+  return process.env[name] === "1";
+}
+var config = {
+  /** Project-management chrome (v0.10.0). Gates new daemon routes + new chrome panels. */
+  featureProjectMgmt: flag("LOOM_FEATURE_PROJECT_MGMT"),
+  /** Local-only JSONL telemetry append to ~/.loom/telemetry.jsonl. */
+  telemetry: flag("LOOM_TELEMETRY")
+};
+
+// src/core/telemetry.ts
+var _path = null;
+function telemetryPath() {
+  if (_path) return _path;
+  _path = join10(loomHome(), "telemetry.jsonl");
+  mkdirSync8(dirname6(_path), { recursive: true });
+  return _path;
+}
+function emit(event) {
+  if (!config.telemetry) return;
+  const line = JSON.stringify({ ts: Date.now(), ...event }) + "\n";
+  try {
+    appendFileSync(telemetryPath(), line, "utf8");
+  } catch {
+  }
+}
+
+// src/studio/server.ts
+init_esm_shims();
+import { createServer as createViteServer } from "vite";
+import react from "@vitejs/plugin-react";
+import { resolve as resolve3 } from "path";
+
 // src/studio/tokens-to-css.ts
+init_esm_shims();
 function tokensToCss(projectDir) {
   const { flat } = loadTokens(projectDir);
   let resolved;
@@ -66345,27 +67013,27 @@ function dashify(s) {
 
 // src/studio/runtime.ts
 init_esm_shims();
-import { existsSync as existsSync5, mkdirSync as mkdirSync7, writeFileSync as writeFileSync6, readFileSync as readFileSync6 } from "fs";
-import { join as join9 } from "path";
+import { existsSync as existsSync6, mkdirSync as mkdirSync9, writeFileSync as writeFileSync7, readFileSync as readFileSync7 } from "fs";
+import { join as join11 } from "path";
 function ensureStudioRuntime(projectDir) {
-  const studioDir = join9(projectDir, ".loom", "studio");
-  mkdirSync7(studioDir, { recursive: true });
-  writeIfChanged(join9(studioDir, "index.html"), INDEX_HTML);
-  writeIfChanged(join9(studioDir, "main.tsx"), MAIN_TSX);
-  writeIfChanged(join9(studioDir, "router.tsx"), ROUTER_TSX);
-  writeIfChanged(join9(studioDir, "boot.css"), BOOT_CSS);
-  writeIfChanged(join9(studioDir, "tsconfig.json"), JSON.stringify(TSCONFIG, null, 2));
+  const studioDir = join11(projectDir, ".loom", "studio");
+  mkdirSync9(studioDir, { recursive: true });
+  writeIfChanged(join11(studioDir, "index.html"), INDEX_HTML);
+  writeIfChanged(join11(studioDir, "main.tsx"), MAIN_TSX);
+  writeIfChanged(join11(studioDir, "router.tsx"), ROUTER_TSX);
+  writeIfChanged(join11(studioDir, "boot.css"), BOOT_CSS);
+  writeIfChanged(join11(studioDir, "tsconfig.json"), JSON.stringify(TSCONFIG, null, 2));
   return { studioDir };
 }
 function writeIfChanged(path2, content) {
-  if (existsSync5(path2)) {
+  if (existsSync6(path2)) {
     try {
-      const cur = readFileSync6(path2, "utf8");
+      const cur = readFileSync7(path2, "utf8");
       if (cur === content) return;
     } catch {
     }
   }
-  writeFileSync6(path2, content);
+  writeFileSync7(path2, content);
 }
 var TSCONFIG = {
   compilerOptions: {
@@ -66512,7 +67180,7 @@ export const Router: React.FC<{ routeMods: LoaderMap; layoutMods: LayoutLoaderMa
 
 // src/vite-plugin-loom-ids/index.ts
 init_esm_shims();
-import { readFileSync as readFileSync7 } from "fs";
+import { readFileSync as readFileSync8 } from "fs";
 import { relative as relative5 } from "path";
 
 // node_modules/.pnpm/magic-string@0.30.21/node_modules/magic-string/dist/magic-string.es.mjs
@@ -67594,45 +68262,7 @@ var MagicString = class _MagicString {
 
 // src/vite-plugin-loom-ids/index.ts
 import { createHash as createHash2 } from "crypto";
-
-// src/validate/ast-utils.ts
-init_esm_shims();
-var babelParser = __toESM(require_lib2(), 1);
-function parseFile(source) {
-  return babelParser.parse(source, {
-    sourceType: "module",
-    allowImportExportEverywhere: true,
-    allowReturnOutsideFunction: true,
-    errorRecovery: true,
-    plugins: ["jsx", "typescript", "classProperties", "decorators-legacy", "topLevelAwait"]
-  });
-}
-function walkAll(root, visitor) {
-  const stack = [{ node: root, parent: null }];
-  while (stack.length > 0) {
-    const { node, parent } = stack.pop();
-    const r = visitor(node, parent);
-    if (r === false) continue;
-    for (const key of Object.keys(node)) {
-      if (key === "loc" || key === "start" || key === "end" || key === "type" || key === "raw") continue;
-      const val = node[key];
-      if (val && typeof val === "object") {
-        if (Array.isArray(val)) {
-          for (const item of val) {
-            if (item && typeof item === "object" && typeof item.type === "string") {
-              stack.push({ node: item, parent: node });
-            }
-          }
-        } else if (typeof val.type === "string") {
-          stack.push({ node: val, parent: node });
-        }
-      }
-    }
-  }
-}
-
-// src/vite-plugin-loom-ids/index.ts
-var cache = /* @__PURE__ */ new Map();
+var cache2 = /* @__PURE__ */ new Map();
 function loomIds(options = {}) {
   const attrName = options.attrName ?? "data-loom-id";
   const projectRoot = options.projectRoot ?? process.cwd();
@@ -67646,7 +68276,7 @@ function loomIds(options = {}) {
       const contentHash = createHash2("sha256").update(code).digest("hex").slice(0, 12);
       const cacheKey = id;
       if (useCache) {
-        const cached = cache.get(cacheKey);
+        const cached = cache2.get(cacheKey);
         if (cached && cached.hash === contentHash) {
           return applyInjections(code, cached.injections, attrName);
         }
@@ -67661,7 +68291,7 @@ function loomIds(options = {}) {
       const injections = [];
       walkJsx(ast, rel, "root", (point) => injections.push(point));
       if (useCache) {
-        cache.set(cacheKey, { hash: contentHash, injections });
+        cache2.set(cacheKey, { hash: contentHash, injections });
       }
       return applyInjections(code, injections, attrName);
     }
@@ -67892,19 +68522,616 @@ function fullReload(projectId) {
 
 // src/studio/chrome.ts
 init_esm_shims();
+
+// src/studio/panels.ts
+init_esm_shims();
+function panelsBlocks(ctx) {
+  const projectId = ctx.project.id;
+  const projectName = ctx.project.name;
+  return {
+    shellBefore: shellBefore(projectId, projectName),
+    shellAfter: shellAfter(projectId),
+    css: PANEL_CSS,
+    script: panelScript(projectId, ctx.initialRoute)
+  };
+}
+function shellBefore(projectId, projectName) {
+  return `
+    <aside class="pm-switcher" id="pm-switcher" aria-label="Project switcher">
+      <div class="pm-switcher-head">
+        <span class="pm-section-label">Projects</span>
+        <button type="button" id="pm-new-project" class="pm-icon-btn" title="New project">\uFF0B</button>
+      </div>
+      <ul class="pm-switcher-list" id="pm-project-list"></ul>
+    </aside>
+    <aside class="pm-sidebar" id="pm-sidebar" aria-label="Project resources">
+      <div class="pm-tabs" role="tablist">
+        <button role="tab" data-tab="routes" class="pm-tab active" aria-selected="true">Routes</button>
+        <button role="tab" data-tab="tokens" class="pm-tab" aria-selected="false">Tokens</button>
+        <button role="tab" data-tab="components" class="pm-tab" aria-selected="false">Components</button>
+      </div>
+      <div class="pm-tab-bodies">
+        <div class="pm-tab-body active" data-tab-body="routes" id="pm-routes-body">
+          <div class="pm-empty">Loading routes\u2026</div>
+        </div>
+        <div class="pm-tab-body" data-tab-body="tokens" id="pm-tokens-body" hidden>
+          <div class="pm-empty">Loading tokens\u2026</div>
+        </div>
+        <div class="pm-tab-body" data-tab-body="components" id="pm-components-body" hidden>
+          <div class="pm-empty">Loading components\u2026</div>
+        </div>
+      </div>
+    </aside>
+    <div class="pm-project-header" id="pm-project-header" data-project="${escAttr(projectId)}">
+      <div class="pm-project-name">
+        <strong id="pm-name-display">${escHtml(projectName)}</strong>
+        <span class="pm-git" id="pm-git" title="git status">\u2014</span>
+      </div>
+      <div class="pm-project-desc" id="pm-desc">No description.</div>
+    </div>
+  `;
+}
+function shellAfter(projectId) {
+  return `
+    <section class="pm-version-strip" id="pm-version-strip" aria-label="Version history for current route">
+      <div class="pm-version-head">
+        <span class="pm-section-label">Versions for <code id="pm-version-route">/</code></span>
+      </div>
+      <div class="pm-version-cards" id="pm-version-cards">
+        <div class="pm-empty">No versions yet.</div>
+      </div>
+    </section>
+    <aside class="pm-activity" id="pm-activity" data-project="${escAttr(projectId)}" aria-label="Activity feed">
+      <div class="pm-activity-head">
+        <span class="pm-section-label">Activity</span>
+        <div class="pm-activity-filters" id="pm-activity-filters">
+          <button class="pm-chip active" data-kind="file">file</button>
+          <button class="pm-chip active" data-kind="forge">forge</button>
+          <button class="pm-chip active" data-kind="panel">panel</button>
+          <button class="pm-chip active" data-kind="version">version</button>
+          <button class="pm-chip active" data-kind="session">session</button>
+        </div>
+      </div>
+      <ul class="pm-activity-list" id="pm-activity-list"></ul>
+    </aside>
+  `;
+}
+var PANEL_CSS = `
+body[data-pm="1"] {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  grid-template-columns: 220px 1fr 280px;
+  grid-template-areas:
+    "header header header"
+    "switcher pmheader activity"
+    "switcher sidebarstage activity"
+    "switcher version activity"
+    "footer footer footer";
+}
+body[data-pm="1"] .chrome-bar { grid-area: header; }
+body[data-pm="1"] .pm-switcher { grid-area: switcher; }
+body[data-pm="1"] .pm-project-header { grid-area: pmheader; }
+body[data-pm="1"] .pm-activity { grid-area: activity; }
+body[data-pm="1"] .pm-version-strip { grid-area: version; }
+body[data-pm="1"] .status { grid-area: footer; }
+body[data-pm="1"] .stage,
+body[data-pm="1"] .pm-sidebar { grid-area: sidebarstage; }
+body[data-pm="1"] .stage {
+  display: grid;
+  grid-template-columns: 220px var(--split, 460px) 6px 1fr;
+}
+body[data-pm="1"] .pm-sidebar { display: contents; }
+
+@media (max-width: 1440px) {
+  body[data-pm="1"][data-pm-collapsed="1"] {
+    grid-template-columns: 0 1fr 0;
+  }
+  body[data-pm="1"][data-pm-collapsed="1"] .pm-switcher,
+  body[data-pm="1"][data-pm-collapsed="1"] .pm-activity { display: none; }
+}
+
+.pm-switcher { background: var(--chrome-bg); border-right: 1px solid var(--chrome-border); padding: 10px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+.pm-switcher-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.pm-switcher-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
+.pm-switcher-list li { padding: 0; margin: 0; }
+.pm-switcher-list a { display: block; padding: 6px 8px; border-radius: 5px; color: var(--chrome-text); text-decoration: none; font-size: 12px; line-height: 1.3; }
+.pm-switcher-list a:hover { background: oklch(0.20 0.01 270); }
+.pm-switcher-list a.active { background: var(--chrome-accent); color: #1a1207; font-weight: 600; }
+.pm-switcher-list a small { display: block; color: var(--chrome-muted); font-size: 10.5px; margin-top: 1px; }
+.pm-switcher-list a.active small { color: rgba(26,18,7,0.7); }
+.pm-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
+.pm-icon-btn { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
+.pm-icon-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
+
+.pm-project-header { padding: 10px 14px; border-bottom: 1px solid var(--chrome-border); background: var(--chrome-bg); display: flex; flex-direction: column; gap: 4px; }
+.pm-project-name { display: flex; align-items: center; gap: 10px; }
+.pm-project-name strong { font-size: 14px; cursor: text; padding: 1px 4px; border-radius: 3px; }
+.pm-project-name strong:hover { background: oklch(0.18 0.01 270); }
+.pm-project-name strong[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); }
+.pm-git { font-size: 10.5px; color: var(--chrome-muted); font-family: ui-monospace, monospace; }
+.pm-git.dirty { color: oklch(0.78 0.16 70); }
+.pm-project-desc { font-size: 11.5px; color: var(--chrome-muted); cursor: text; padding: 1px 4px; border-radius: 3px; }
+.pm-project-desc:hover { background: oklch(0.18 0.01 270); }
+.pm-project-desc[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); color: var(--chrome-text); }
+
+.pm-sidebar { width: 220px; border-right: 1px solid var(--chrome-border); background: oklch(0.13 0.01 270); display: flex; flex-direction: column; min-width: 0; }
+.pm-tabs { display: flex; border-bottom: 1px solid var(--chrome-border); }
+.pm-tab { flex: 1; background: transparent; border: none; padding: 8px 4px; color: var(--chrome-muted); font: inherit; font-size: 11.5px; cursor: pointer; border-bottom: 2px solid transparent; }
+.pm-tab.active { color: var(--chrome-text); border-bottom-color: var(--chrome-accent); }
+.pm-tab-bodies { flex: 1; overflow-y: auto; padding: 8px; }
+.pm-tab-body[hidden] { display: none; }
+.pm-empty { color: var(--chrome-muted); font-size: 11px; padding: 12px 6px; text-align: center; font-style: italic; }
+.pm-list-row { display: flex; flex-direction: column; padding: 5px 6px; border-radius: 4px; cursor: pointer; font-size: 11.5px; line-height: 1.25; }
+.pm-list-row:hover { background: oklch(0.18 0.01 270); }
+.pm-list-row.active { background: var(--chrome-accent); color: #1a1207; }
+.pm-list-row code { font-family: ui-monospace, monospace; font-size: 11px; }
+.pm-list-row small { color: var(--chrome-muted); font-size: 10px; margin-top: 1px; }
+.pm-list-row.active small { color: rgba(26,18,7,0.7); }
+.pm-search { width: 100%; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 5px 8px; border-radius: 4px; font: inherit; font-size: 11.5px; margin-bottom: 8px; }
+.pm-search:focus { outline: 1px solid var(--chrome-accent); border-color: var(--chrome-accent); }
+.pm-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); vertical-align: -2px; margin-right: 6px; }
+
+.pm-version-strip { background: var(--chrome-bg); border-top: 1px solid var(--chrome-border); padding: 8px 14px; overflow: hidden; }
+.pm-version-head { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.pm-version-head code { color: var(--chrome-text); font-family: ui-monospace, monospace; font-size: 10.5px; }
+.pm-version-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.pm-version-card { flex: 0 0 160px; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.pm-version-card code { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--chrome-muted); }
+.pm-version-card .pm-version-time { color: var(--chrome-muted); font-size: 10px; }
+.pm-version-card .pm-restore-btn { margin-top: 4px; background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); border-radius: 4px; padding: 3px 6px; font-size: 10.5px; cursor: pointer; }
+.pm-version-card .pm-restore-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
+
+.pm-activity { background: var(--chrome-bg); border-left: 1px solid var(--chrome-border); overflow-y: auto; display: flex; flex-direction: column; }
+.pm-activity-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--chrome-border); display: flex; flex-direction: column; gap: 6px; }
+.pm-activity-filters { display: flex; flex-wrap: wrap; gap: 4px; }
+.pm-chip { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-muted); font-size: 10px; padding: 2px 6px; border-radius: 10px; cursor: pointer; }
+.pm-chip.active { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); font-weight: 600; }
+.pm-activity-list { list-style: none; padding: 6px 6px; margin: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+.pm-activity-list li { padding: 6px 8px; background: oklch(0.16 0.01 270); border-radius: 5px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+.pm-activity-list li:hover { background: oklch(0.20 0.01 270); }
+.pm-activity-list li .pm-act-meta { display: flex; gap: 6px; align-items: baseline; color: var(--chrome-muted); font-size: 10px; margin-bottom: 1px; }
+.pm-activity-list li .pm-act-kind { text-transform: uppercase; letter-spacing: 0.5px; font-size: 9px; }
+
+.pm-modal-backdrop { position: fixed; inset: 0; background: rgba(8,10,14,0.55); backdrop-filter: blur(2px); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.pm-modal-card { background: #15181f; border: 1px solid var(--chrome-border); border-radius: 10px; width: 420px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+.pm-modal-card h3 { margin: 0; font-size: 14px; }
+.pm-modal-card label { display: flex; flex-direction: column; gap: 4px; font-size: 11.5px; color: var(--chrome-muted); }
+.pm-modal-card input, .pm-modal-card select { background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 6px 8px; border-radius: 5px; font: inherit; font-size: 12px; }
+.pm-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.pm-modal-actions button { background: oklch(0.18 0.01 270); border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 6px 12px; border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
+.pm-modal-actions button.primary { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); font-weight: 600; }
+`;
+function panelScript(projectId, initialRoute) {
+  return `
+(function() {
+  const PROJECT_ID = ${JSON.stringify(projectId)};
+  const SECRET = window.__loomDaemonSecret;
+  const hdrs = SECRET ? { "content-type": "application/json", "x-loom-secret": SECRET } : { "content-type": "application/json" };
+  let currentRoute = ${JSON.stringify(initialRoute)};
+  const activeKinds = new Set(["file", "forge", "panel", "version", "session"]);
+
+  function $(id) { return document.getElementById(id); }
+  function el(tag, attrs, ...children) {
+    const e = document.createElement(tag);
+    if (attrs) for (const k in attrs) {
+      if (k === "class") e.className = attrs[k];
+      else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+      else e.setAttribute(k, attrs[k]);
+    }
+    for (const c of children) {
+      if (c == null) continue;
+      e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+    }
+    return e;
+  }
+  function relTime(ms) {
+    const d = Date.now() - ms;
+    if (d < 60_000) return Math.max(0, Math.floor(d / 1000)) + "s ago";
+    if (d < 3_600_000) return Math.floor(d / 60_000) + "m ago";
+    if (d < 86_400_000) return Math.floor(d / 3_600_000) + "h ago";
+    return Math.floor(d / 86_400_000) + "d ago";
+  }
+
+  async function loadProjects() {
+    try {
+      const r = await fetch("/api/loom/projects");
+      const j = await r.json();
+      const list = $("pm-project-list");
+      list.replaceChildren();
+      for (const p of (j.projects || [])) {
+        if (p.archived) continue;
+        const a = el("a", {
+          href: "#",
+          class: p.id === PROJECT_ID ? "active" : "",
+          onclick: (e) => { e.preventDefault(); switchProject(p.id); },
+        }, p.name, el("small", null, p.path.replace(/\\\\/g, "/").split("/").slice(-2).join("/")));
+        list.appendChild(el("li", null, a));
+      }
+    } catch (err) { console.error("[loom-pm] loadProjects failed", err); }
+  }
+  async function switchProject(id) {
+    if (id === PROJECT_ID) return;
+    try {
+      const r = await fetch("/api/loom/projects/" + id + "/open", { method: "POST", headers: hdrs });
+      if (!r.ok) throw new Error("open failed");
+      window.location.href = "/loom/preview/" + id + "/";
+    } catch (err) { console.error("[loom-pm] switchProject failed", err); }
+  }
+
+  function openCreateDialog() {
+    if (document.getElementById("pm-create-dialog")) return;
+    const card = el("div", { class: "pm-modal-card" },
+      el("h3", null, "New project"),
+      el("label", null, "Name (lowercase, hyphens)",
+        el("input", { id: "pm-create-name", type: "text", placeholder: "my-design" }),
+      ),
+      el("label", null, "Template",
+        (() => {
+          const s = el("select", { id: "pm-create-template" });
+          s.appendChild(el("option", { value: "shadcn-starter" }, "shadcn-starter"));
+          s.appendChild(el("option", { value: "blank" }, "blank"));
+          return s;
+        })(),
+      ),
+      el("div", { class: "pm-modal-actions" },
+        el("button", { type: "button", onclick: closeCreateDialog }, "Cancel"),
+        el("button", { type: "button", class: "primary", onclick: submitCreate }, "Create"),
+      ),
+    );
+    const back = el("div", { class: "pm-modal-backdrop", id: "pm-create-dialog" }, card);
+    back.addEventListener("click", (e) => { if (e.target === back) closeCreateDialog(); });
+    document.body.appendChild(back);
+    setTimeout(() => document.getElementById("pm-create-name").focus(), 0);
+  }
+  function closeCreateDialog() {
+    const d = document.getElementById("pm-create-dialog");
+    if (d) d.remove();
+  }
+  async function submitCreate() {
+    const name = (document.getElementById("pm-create-name").value || "").trim();
+    const template = document.getElementById("pm-create-template").value;
+    if (!name) return;
+    try {
+      const r = await fetch("/api/loom/projects", { method: "POST", headers: hdrs, body: JSON.stringify({ name, template }) });
+      const j = await r.json();
+      if (!r.ok || j.error) throw new Error(j.error || "create failed");
+      window.location.href = "/loom/preview/" + j.project.id + "/";
+    } catch (err) { alert("Create failed: " + err.message); }
+  }
+
+  async function loadGitStatus() {
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/git-status");
+      const j = await r.json();
+      const node = $("pm-git");
+      if (j.stale) { node.textContent = "\u2014"; node.classList.remove("dirty"); return; }
+      node.textContent = (j.branch || "(detached)") + (j.dirty ? " \u25CF" : "");
+      node.classList.toggle("dirty", !!j.dirty);
+    } catch { /* noop */ }
+  }
+  function wireHeaderEdits() {
+    const nameEl = $("pm-name-display");
+    const descEl = $("pm-desc");
+    const editable = (node) => () => {
+      node.setAttribute("contenteditable", "true");
+      node.focus();
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    };
+    const save = (field, node) => async () => {
+      node.removeAttribute("contenteditable");
+      const value = node.textContent.trim();
+      try {
+        const body = {};
+        body[field] = value;
+        await fetch("/api/loom/projects/" + PROJECT_ID, { method: "PATCH", headers: hdrs, body: JSON.stringify(body) });
+      } catch (err) { console.error("[loom-pm] save", field, err); }
+    };
+    nameEl.addEventListener("click", editable(nameEl));
+    nameEl.addEventListener("blur", save("name", nameEl));
+    nameEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); nameEl.blur(); } });
+    descEl.addEventListener("click", editable(descEl));
+    descEl.addEventListener("blur", save("description", descEl));
+    descEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); descEl.blur(); } });
+  }
+
+  function wireTabs() {
+    const tabs = document.querySelectorAll(".pm-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+        tabs.forEach((t) => {
+          t.classList.toggle("active", t === tab);
+          t.setAttribute("aria-selected", t === tab ? "true" : "false");
+        });
+        document.querySelectorAll(".pm-tab-body").forEach((body) => {
+          const match = body.dataset.tabBody === target;
+          body.hidden = !match;
+          body.classList.toggle("active", match);
+        });
+        if (target === "routes") loadRoutes();
+        else if (target === "tokens") loadTokens();
+        else if (target === "components") loadComponents();
+      });
+    });
+  }
+  async function loadRoutes() {
+    const body = $("pm-routes-body");
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/routes");
+      const j = await r.json();
+      body.replaceChildren();
+      const search = el("input", { type: "search", placeholder: "Search routes\u2026", class: "pm-search" });
+      body.appendChild(search);
+      const list = el("div");
+      body.appendChild(list);
+      const render = (filter) => {
+        list.replaceChildren();
+        const f = (filter || "").toLowerCase();
+        const filtered = (j.routes || []).filter((rt) => !f || rt.path.toLowerCase().includes(f));
+        if (filtered.length === 0) {
+          list.appendChild(el("div", { class: "pm-empty" }, "No routes."));
+          return;
+        }
+        for (const rt of filtered) {
+          const row = el("div", {
+            class: "pm-list-row" + (rt.path === currentRoute ? " active" : ""),
+            onclick: () => selectRoute(rt.path),
+          }, el("code", null, rt.path));
+          if (rt.meta && rt.meta.title) row.appendChild(el("small", null, rt.meta.title));
+          list.appendChild(row);
+        }
+      };
+      search.addEventListener("input", () => render(search.value));
+      render("");
+    } catch (err) { body.textContent = "Failed to load routes."; }
+  }
+  function selectRoute(path) {
+    currentRoute = path;
+    const picker = document.getElementById("route-picker");
+    if (picker) {
+      picker.value = path;
+      picker.dispatchEvent(new Event("change"));
+    }
+    loadVersions();
+    document.querySelectorAll("#pm-routes-body .pm-list-row").forEach((row) => {
+      const code = row.querySelector("code");
+      row.classList.toggle("active", !!code && code.textContent === path);
+    });
+  }
+  async function loadTokens() {
+    const body = $("pm-tokens-body");
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/tokens");
+      const j = await r.json();
+      body.replaceChildren();
+      if (!j.tokens || j.tokens.length === 0) {
+        body.appendChild(el("div", { class: "pm-empty" }, "No tokens defined."));
+        return;
+      }
+      let currentNs = "";
+      for (const t of j.tokens) {
+        if (t.namespace !== currentNs) {
+          body.appendChild(el("div", { class: "pm-section-label", style: "margin: 8px 0 4px 4px;" }, t.namespace));
+          currentNs = t.namespace;
+        }
+        const display = t.resolved || t.raw || "";
+        const isColor = display.startsWith("oklch") || /^#[0-9a-f]{3,8}$/i.test(display);
+        const row = el("div", { class: "pm-list-row" });
+        const codeWrap = el("div", null);
+        if (isColor) codeWrap.appendChild(el("span", { class: "pm-swatch", style: "background:" + display }));
+        codeWrap.appendChild(el("code", null, t.name));
+        row.appendChild(codeWrap);
+        row.appendChild(el("small", null, display));
+        body.appendChild(row);
+      }
+    } catch (err) { body.textContent = "Failed to load tokens."; }
+  }
+  async function loadComponents() {
+    const body = $("pm-components-body");
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/components");
+      const j = await r.json();
+      body.replaceChildren();
+      if (!j.components || j.components.length === 0) {
+        body.appendChild(el("div", { class: "pm-empty" }, "No components yet."));
+        return;
+      }
+      for (const c of j.components) {
+        const meta = [
+          c.hasSpec ? "spec" : null,
+          c.hasTokens ? "tokens" : null,
+          c.hasA11y ? "a11y" : null,
+          c.hasStories ? "stories" : null,
+        ].filter(Boolean).join(" \xB7 ");
+        const row = el("div", { class: "pm-list-row" },
+          el("code", null, c.name),
+          el("small", null, meta || "\u2014"),
+        );
+        body.appendChild(row);
+      }
+    } catch (err) { body.textContent = "Failed to load components."; }
+  }
+
+  async function loadVersions() {
+    const cards = $("pm-version-cards");
+    const routeLabel = $("pm-version-route");
+    if (routeLabel) routeLabel.textContent = currentRoute;
+    try {
+      const url = "/api/loom/projects/" + PROJECT_ID + "/versions?route=" + encodeURIComponent(currentRoute);
+      const r = await fetch(url);
+      const j = await r.json();
+      cards.replaceChildren();
+      if (!j.versions || j.versions.length === 0) {
+        cards.appendChild(el("div", { class: "pm-empty" }, "No versions for this route yet."));
+        return;
+      }
+      for (const v of j.versions) {
+        const card = el("div", { class: "pm-version-card" },
+          el("code", null, v.id.slice(0, 10)),
+          el("div", { class: "pm-version-time" }, relTime(v.createdAt) + " \xB7 " + v.createdBy),
+          el("button", {
+            type: "button",
+            class: "pm-restore-btn",
+            onclick: () => restoreVersion(v.id),
+          }, "Restore"),
+        );
+        cards.appendChild(card);
+      }
+    } catch (err) { console.error("[loom-pm] loadVersions", err); }
+  }
+  async function restoreVersion(vid) {
+    if (!confirm("Restore version " + vid.slice(0, 10) + "?\\nCurrent state will be snapshotted first.")) return;
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/versions/" + vid + "/restore", { method: "POST", headers: hdrs });
+      const j = await r.json();
+      if (!r.ok || j.error) throw new Error(j.error || "restore failed");
+      loadVersions();
+    } catch (err) { alert("Restore failed: " + err.message); }
+  }
+
+  function renderActivityRow(e) {
+    return el("li", { onclick: () => activityClick(e) },
+      el("div", { class: "pm-act-meta" },
+        el("span", { class: "pm-act-kind" }, e.kind),
+        e.subkind ? el("span", null, e.subkind) : null,
+        el("span", null, "\xB7"),
+        el("span", null, relTime(e.createdAt)),
+      ),
+      el("div", null, e.title),
+    );
+  }
+  function activityClick(e) {
+    if (e.refPath && (e.kind === "route" || e.kind === "token" || e.kind === "component")) {
+      const tabName = e.kind === "route" ? "routes" : e.kind === "token" ? "tokens" : "components";
+      const tab = document.querySelector('.pm-tab[data-tab="' + tabName + '"]');
+      if (tab) tab.click();
+    }
+  }
+  async function loadActivity() {
+    const list = $("pm-activity-list");
+    try {
+      const kinds = Array.from(activeKinds).join(",");
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/activity?limit=50&kind=" + kinds);
+      const j = await r.json();
+      list.replaceChildren();
+      for (const e of (j.events || [])) {
+        list.appendChild(renderActivityRow(e));
+      }
+    } catch (err) { console.error("[loom-pm] loadActivity", err); }
+  }
+  function wireActivityFilters() {
+    document.querySelectorAll("#pm-activity-filters .pm-chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        const k = chip.dataset.kind;
+        if (activeKinds.has(k)) activeKinds.delete(k);
+        else activeKinds.add(k);
+        chip.classList.toggle("active");
+        loadActivity();
+      });
+    });
+  }
+  function subscribeActivity() {
+    let ws = null;
+    let backoff = 250;
+    const connect = () => {
+      try {
+        const proto = location.protocol === "https:" ? "wss" : "ws";
+        ws = new WebSocket(proto + "://" + location.host + "/api/loom/projects/" + PROJECT_ID + "/activity/stream");
+        ws.onopen = () => { backoff = 250; };
+        ws.onmessage = (m) => {
+          try {
+            const data = JSON.parse(m.data);
+            if (data.kind !== "event" || !data.event) return;
+            const e = data.event;
+            if (!activeKinds.has(e.kind)) return;
+            const list = $("pm-activity-list");
+            list.insertBefore(renderActivityRow(e), list.firstChild);
+            while (list.childElementCount > 50) list.removeChild(list.lastChild);
+          } catch { /* ignore */ }
+        };
+        ws.onclose = () => {
+          setTimeout(connect, backoff);
+          backoff = Math.min(backoff * 2, 4000);
+        };
+        ws.onerror = () => { try { ws.close(); } catch { /* noop */ } };
+      } catch (err) {
+        setTimeout(connect, backoff);
+      }
+    };
+    connect();
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      const list = $("pm-project-list");
+      const first = list && list.querySelector("a");
+      if (first) first.focus();
+    }
+  });
+
+  function boot() {
+    $("pm-new-project").addEventListener("click", openCreateDialog);
+    wireTabs();
+    wireHeaderEdits();
+    wireActivityFilters();
+    loadProjects();
+    loadGitStatus();
+    setInterval(loadGitStatus, 5000);
+    loadRoutes();
+    loadVersions();
+    loadActivity();
+    subscribeActivity();
+
+    const picker = document.getElementById("route-picker");
+    if (picker) picker.addEventListener("change", () => {
+      currentRoute = picker.value;
+      loadVersions();
+      document.querySelectorAll("#pm-routes-body .pm-list-row").forEach((row) => {
+        const code = row.querySelector("code");
+        row.classList.toggle("active", !!code && code.textContent === currentRoute);
+      });
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
+  }
+})();
+`;
+}
+function escHtml(s) {
+  return s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]
+  );
+}
+function escAttr(s) {
+  return escHtml(s);
+}
+
+// src/studio/chrome.ts
 function renderStudioChrome(ctx) {
   const routes = ctx.routes.map((r) => r.path).sort().map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
   const initialRoute = ctx.routes.some((r) => r.path === "/") ? "/" : ctx.routes[0]?.path ?? "/";
   const viteOrigin = `http://127.0.0.1:${ctx.vitePort}`;
+  const pm = ctx.featureProjectMgmt ? panelsBlocks({ project: ctx.project, initialRoute }) : { shellBefore: "", shellAfter: "", css: "", script: "" };
+  const bodyAttrs = ctx.featureProjectMgmt ? ' data-pm="1"' : "";
   return `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom \xB7 ${escapeHtml(ctx.project.name)}</title>
-    <style>${CHROME_CSS}</style>
+    <style>${CHROME_CSS}${pm.css}</style>
   </head>
-  <body>
+  <body${bodyAttrs}>
     <header class="chrome-bar">
       <div class="brand">
         <span class="logo">\u25D0</span>
@@ -67939,6 +69166,7 @@ function renderStudioChrome(ctx) {
         <button id="reload" class="reload" title="Reload preview">\u21BB</button>
       </div>
     </header>
+    ${pm.shellBefore}
 
     <main class="stage" id="stage">
       <section class="term-pane" id="term-pane">
@@ -67958,6 +69186,7 @@ function renderStudioChrome(ctx) {
         </div>
       </section>
     </main>
+    ${pm.shellAfter}
     <div id="flags-modal" class="modal" hidden aria-hidden="true">
       <div class="modal-backdrop" data-modal-close></div>
       <form class="modal-card" id="flags-form">
@@ -68031,6 +69260,7 @@ function renderStudioChrome(ctx) {
     </footer>
 
     <script>${chromeScript(ctx)}</script>
+    ${pm.script ? `<script>${pm.script}</script>` : ""}
   </body>
 </html>
 `;
@@ -68141,6 +69371,7 @@ const DAEMON_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/ws
 const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/terminal/ws?projectId=${ctx.project.id}`)};
 const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
 const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
+window.__loomDaemonSecret = DAEMON_SECRET;
 const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile \xB7 360", "768x1024": "Tablet \xB7 768", "1280x800": "Desktop \xB7 1280", "1440x900": "Wide \xB7 1440" };
 
 const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
@@ -68486,9 +69717,9 @@ import {
 import { wrapBracketedPaste } from "@celestial/nebula";
 import { keyToBuffer } from "@celestial/telescope";
 import { randomUUID } from "crypto";
-import { writeFileSync as writeFileSync7 } from "fs";
+import { writeFileSync as writeFileSync8 } from "fs";
 import { tmpdir } from "os";
-import { join as join10 } from "path";
+import { join as join12 } from "path";
 var PASTE_IMAGE_EXT = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -68510,9 +69741,9 @@ function writePastedImageToTmp(dataBase64, mime, filename) {
   if (bytes.length === 0) return null;
   const ext = PASTE_IMAGE_EXT[mime?.toLowerCase() ?? ""] ?? "bin";
   const safe = filename && /^[\w.-]+$/.test(filename) ? filename : `loom-paste-${randomUUID()}.${ext}`;
-  const path2 = join10(tmpdir(), safe);
+  const path2 = join12(tmpdir(), safe);
   try {
-    writeFileSync7(path2, bytes);
+    writeFileSync8(path2, bytes);
   } catch {
     return null;
   }
@@ -68687,21 +69918,60 @@ async function startDaemon(opts = {}) {
       }
     }
   }
+  const activityDedupe = /* @__PURE__ */ new Map();
+  const ACTIVITY_DEDUPE_MS = 250;
+  function maybeEmitFileActivity(projectId, path2) {
+    const key = `${projectId}|${path2}`;
+    const now = Date.now();
+    const prev = activityDedupe.get(key);
+    if (prev !== void 0 && now - prev < ACTIVITY_DEDUPE_MS) return;
+    activityDedupe.set(key, now);
+    if (activityDedupe.size > 5e3) {
+      const entries = Array.from(activityDedupe.entries()).sort((a, b) => a[1] - b[1]);
+      for (let i = 0; i < entries.length / 2; i++) activityDedupe.delete(entries[i][0]);
+    }
+    const rel = path2.startsWith(projectId) ? path2 : path2;
+    try {
+      activityInsert({
+        projectId,
+        kind: classifyFileKind(rel),
+        subkind: "changed",
+        title: shortFilename(rel),
+        refPath: rel
+      });
+    } catch {
+    }
+  }
   function ensureWatch(projectDir) {
     if (watchers.has(projectDir)) return;
     const handle = startWatcher(projectDir, (ev) => {
+      const proj = projectList().find((p) => p.path === projectDir);
       if (ev.kind === "manifest_changed") {
         try {
           const v = versionSnapshot(projectDir, "main", { createdBy: "auto" });
           broadcast({ kind: "version_snapshot", projectDir, versionId: v.id });
+          if (proj && config.featureProjectMgmt) {
+            try {
+              activityInsert({
+                projectId: proj.id,
+                kind: "version",
+                subkind: "auto_snapshot",
+                title: `auto-snapshot ${v.id.slice(0, 10)}`,
+                refId: v.id
+              });
+            } catch {
+            }
+          }
         } catch {
         }
       }
       const path2 = ev.path ?? "";
       if (/[\\/]tokens[\\/]/.test(path2)) {
-        const proj = projectList().find((p) => p.path === projectDir);
         if (proj) fullReload(proj.id);
         broadcast({ kind: "token_changed", projectDir, path: path2 });
+      }
+      if (proj && path2 && config.featureProjectMgmt) {
+        maybeEmitFileActivity(proj.id, path2);
       }
       broadcast({ projectDir, ...ev });
     });
@@ -68730,7 +70000,7 @@ async function startDaemon(opts = {}) {
     "/api/loom/watch",
     async (req, reply) => {
       const path2 = req.body?.path;
-      if (!path2 || !existsSync6(path2)) {
+      if (!path2 || !existsSync7(path2)) {
         reply.code(400);
         return { error: "path is required and must exist" };
       }
@@ -68773,7 +70043,8 @@ async function startDaemon(opts = {}) {
           vitePort: studio.port,
           daemonPort: boundPort,
           routes,
-          daemonSecret: secret
+          daemonSecret: secret,
+          featureProjectMgmt: config.featureProjectMgmt
         });
         return reply.type("text/html").send(html);
       } catch (err) {
@@ -68867,6 +70138,266 @@ async function startDaemon(opts = {}) {
       }
     );
   });
+  if (config.featureProjectMgmt) {
+    let projectOr4042 = function(id, reply) {
+      const proj = id ? projectList().find((p) => p.id === id) : null;
+      if (!proj) {
+        reply.code(404);
+        return null;
+      }
+      return proj;
+    };
+    var projectOr404 = projectOr4042;
+    app.get(
+      "/api/loom/projects/:id/git-status",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return await gitStatus(proj.path);
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/routes",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const routes = routeList(proj.path).map((r) => ({
+          path: r.path,
+          file: r.file,
+          meta: r.meta
+        }));
+        return { routes };
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/tokens",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const loaded = loadTokens(proj.path);
+        const resolved = resolveAll(loaded.flat);
+        const tokens = [];
+        for (const [key, raw] of loaded.flat) {
+          const [namespace, ...rest] = key.split(".");
+          tokens.push({
+            namespace: namespace ?? "",
+            name: rest.join("."),
+            raw,
+            resolved: resolved.get(key) ?? null
+          });
+        }
+        tokens.sort((a, b) => a.namespace.localeCompare(b.namespace) || a.name.localeCompare(b.name));
+        return { tokens };
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/components",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return { components: componentList(proj.path) };
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/versions",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const limit = clampNumber(req.query.limit, 50, 1, 500);
+        let versions = versionList(proj.path, limit);
+        if (req.query.route) {
+          const route = req.query.route;
+          versions = versions.filter((v) => {
+            const routeFile = route === "/" ? "routes/index.tsx" : `routes${route}.tsx`;
+            return Object.keys(v.files).some((f) => f === routeFile || f.startsWith(`routes${route}/`));
+          });
+        }
+        const slim = versions.map((v) => ({
+          id: v.id,
+          parentId: v.parentId,
+          branch: v.branch,
+          label: v.label,
+          message: v.message,
+          createdAt: v.createdAt,
+          createdBy: v.createdBy,
+          fileCount: Object.keys(v.files).length
+        }));
+        return { versions: slim };
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/activity",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const limit = clampNumber(req.query.limit, 50, 1, 500);
+        const kinds = req.query.kind ? req.query.kind.split(",").filter(Boolean) : void 0;
+        return { events: activityList(proj.id, { limit, ...kinds ? { kinds } : {} }) };
+      }
+    );
+    app.post(
+      "/api/loom/projects",
+      async (req, reply) => {
+        const name = (req.body?.name ?? "").trim();
+        if (!name) {
+          reply.code(400);
+          return { error: "name is required" };
+        }
+        try {
+          const startedAt = Date.now();
+          const created = await projectCreate({
+            name,
+            template: req.body?.template,
+            ...req.body?.path ? { path: req.body.path } : {}
+          });
+          activityInsert({
+            projectId: created.id,
+            kind: "session",
+            subkind: "created",
+            title: `Project ${created.name} created`
+          });
+          emit({
+            event: "project.create",
+            template: req.body?.template ?? "shadcn-starter",
+            duration_ms: Date.now() - startedAt
+          });
+          return { project: created };
+        } catch (err) {
+          reply.code(400);
+          return { error: err.message };
+        }
+      }
+    );
+    app.post(
+      "/api/loom/projects/:id/open",
+      async (req, reply) => {
+        try {
+          const startedAt = Date.now();
+          const fromProject = projectCurrent();
+          const opened = projectOpen(req.params.id);
+          activityInsert({
+            projectId: opened.id,
+            kind: "session",
+            subkind: "opened",
+            title: `Project ${opened.name} opened`
+          });
+          emit({
+            event: "project.switch",
+            from_id: fromProject?.id ?? null,
+            to_id: opened.id,
+            duration_ms: Date.now() - startedAt
+          });
+          return { project: opened };
+        } catch (err) {
+          reply.code(404);
+          return { error: err.message };
+        }
+      }
+    );
+    app.patch(
+      "/api/loom/projects/:id",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          const updated = projectUpdate(proj.id, {
+            ...req.body?.name !== void 0 ? { name: req.body.name } : {},
+            ...req.body?.description !== void 0 ? { description: req.body.description } : {}
+          });
+          activityInsert({
+            projectId: updated.id,
+            kind: "session",
+            subkind: "renamed",
+            title: `Project metadata updated`
+          });
+          return { project: updated };
+        } catch (err) {
+          reply.code(400);
+          return { error: err.message };
+        }
+      }
+    );
+    app.post(
+      "/api/loom/projects/:id/archive",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          activityInsert({
+            projectId: proj.id,
+            kind: "session",
+            subkind: "archived",
+            title: `Project ${proj.name} archived`
+          });
+          projectArchive(proj.id);
+          return { archived: true };
+        } catch (err) {
+          reply.code(400);
+          return { error: err.message };
+        }
+      }
+    );
+    app.post(
+      "/api/loom/projects/:id/versions/:vid/restore",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          const startedAt = Date.now();
+          const result = versionRestoreWithAutoSnapshot(proj.path, "main", req.params.vid);
+          activityInsert({
+            projectId: proj.id,
+            kind: "version",
+            subkind: "restored",
+            title: `Restored ${req.params.vid.slice(0, 10)} (prior state v${result.snapshotId.slice(0, 8)})`,
+            refId: req.params.vid,
+            payload: { priorSnapshotId: result.snapshotId, restoredCount: result.restored }
+          });
+          emit({
+            event: "version.restore",
+            route: req.query?.route ?? null,
+            version_id: req.params.vid,
+            duration_ms: Date.now() - startedAt
+          });
+          return { restored: true, priorSnapshotId: result.snapshotId, files: result.restored };
+        } catch (err) {
+          reply.code(400);
+          return { error: err.message };
+        }
+      }
+    );
+    app.register(async (instance) => {
+      instance.get(
+        "/api/loom/projects/:id/activity/stream",
+        { websocket: true },
+        (connection, req) => {
+          const projectId = req.params.id;
+          const proj = projectList().find((p) => p.id === projectId);
+          if (!proj) {
+            try {
+              connection.send(JSON.stringify({ kind: "error", message: "project not found" }));
+              connection.close();
+            } catch {
+            }
+            return;
+          }
+          const channel = `event:${projectId}`;
+          const handler = (event) => {
+            try {
+              connection.send(JSON.stringify({ kind: "event", event }));
+            } catch {
+            }
+          };
+          activityBus.on(channel, handler);
+          try {
+            connection.send(JSON.stringify({ kind: "hello", projectId }));
+          } catch {
+          }
+          connection.on("close", () => activityBus.off(channel, handler));
+        }
+      );
+    });
+  }
   app.get(
     "/__loom/vendor/*",
     async (req, reply) => {
@@ -68877,8 +70408,8 @@ async function startDaemon(opts = {}) {
       }
       const here = new URL("./", import.meta.url).pathname;
       const base = here.replace(/^\/([A-Za-z]:\/)/, "$1");
-      const path2 = join11(base, "vendor", rel);
-      if (!existsSync6(path2)) {
+      const path2 = join13(base, "vendor", rel);
+      if (!existsSync7(path2)) {
         reply.code(404);
         return { error: "not found" };
       }
@@ -68886,7 +70417,7 @@ async function startDaemon(opts = {}) {
       const isJs = path2.endsWith(".js") || path2.endsWith(".mjs");
       reply.type(isCss ? "text/css" : isJs ? "text/javascript" : "application/octet-stream");
       reply.header("cache-control", "no-store");
-      return reply.send(readFileSync8(path2));
+      return reply.send(readFileSync9(path2));
     }
   );
   app.register(async (instance) => {
@@ -68970,10 +70501,10 @@ li a:hover{background:#eee}li span{font-size:11.5px;color:#666;font-family:ui-mo
 </head><body><h1>loom \xB7 projects</h1>${empty}<ul>${rows}</ul></body></html>`;
 }
 function ensureSingleton() {
-  mkdirSync8(serverDir(), { recursive: true });
+  mkdirSync10(serverDir(), { recursive: true });
   const pidPath = serverPidPath();
-  if (existsSync6(pidPath)) {
-    const pid = Number.parseInt(readFileSync8(pidPath, "utf8"), 10);
+  if (existsSync7(pidPath)) {
+    const pid = Number.parseInt(readFileSync9(pidPath, "utf8"), 10);
     if (Number.isFinite(pid) && pid !== process.pid && isAlive(pid)) {
       throw new Error(
         `loom daemon already running as pid ${pid}; stop it via \`loom server stop\` or set LOOM_PORT to a different port`
@@ -68990,14 +70521,14 @@ function isAlive(pid) {
   }
 }
 function writeRunFiles(port) {
-  mkdirSync8(serverDir(), { recursive: true });
-  writeFileSync8(serverPidPath(), String(process.pid));
-  writeFileSync8(serverPortPath(), String(port));
+  mkdirSync10(serverDir(), { recursive: true });
+  writeFileSync9(serverPidPath(), String(process.pid));
+  writeFileSync9(serverPortPath(), String(port));
 }
 function clearRunFiles() {
   try {
-    if (existsSync6(serverPidPath())) unlinkSync(serverPidPath());
-    if (existsSync6(serverPortPath())) unlinkSync(serverPortPath());
+    if (existsSync7(serverPidPath())) unlinkSync(serverPidPath());
+    if (existsSync7(serverPortPath())) unlinkSync(serverPortPath());
   } catch {
   }
 }
@@ -69005,15 +70536,31 @@ function pkgVersion() {
   return process.env.LOOM_VERSION ?? "0.9.6";
 }
 function ensureDaemonSecret() {
-  const path2 = join11(serverDir(), "secret");
-  if (existsSync6(path2)) {
-    const value = readFileSync8(path2, "utf8").trim();
+  const path2 = join13(serverDir(), "secret");
+  if (existsSync7(path2)) {
+    const value = readFileSync9(path2, "utf8").trim();
     if (value.length >= 32) return value;
   }
   const secret = randomBytes2(32).toString("hex");
-  mkdirSync8(serverDir(), { recursive: true });
-  writeFileSync8(path2, secret, { mode: 384 });
+  mkdirSync10(serverDir(), { recursive: true });
+  writeFileSync9(path2, secret, { mode: 384 });
   return secret;
+}
+function classifyFileKind(path2) {
+  if (/[\\/]tokens[\\/]/.test(path2)) return "token";
+  if (/[\\/]components[\\/]/.test(path2)) return "component";
+  if (/[\\/]routes[\\/]/.test(path2)) return "route";
+  return "file";
+}
+function shortFilename(path2) {
+  const idx = Math.max(path2.lastIndexOf("/"), path2.lastIndexOf("\\"));
+  return idx >= 0 ? path2.slice(idx + 1) : path2;
+}
+function clampNumber(raw, fallback, min, max) {
+  if (raw === void 0) return fallback;
+  const n2 = Number(raw);
+  if (!Number.isFinite(n2)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(n2)));
 }
 function tokenEquals(a, b) {
   if (a.length !== b.length) return false;

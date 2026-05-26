@@ -177,6 +177,27 @@ export function versionRestore(
   return { restored: count, mode: "safe" };
 }
 
+/**
+ * Restore a version after first snapshotting the working tree to a new version.
+ * This is the safe-by-default path for the studio's "restore" button: the user's
+ * current state is preserved as a fresh version (createdBy="user", label="auto-snapshot
+ * before restore"), then the requested version's files are written into the working
+ * tree. Returns both the snapshot id and the restore result so callers can wire
+ * a "prior state is vXYZ" toast.
+ */
+export function versionRestoreWithAutoSnapshot(
+  projectDir: string,
+  branch: string,
+  targetId: string,
+): { snapshotId: string; restored: number } {
+  const snapshot = versionSnapshot(projectDir, branch, {
+    label: "auto-snapshot before restore",
+    createdBy: "user",
+  });
+  const restore = versionRestore(projectDir, targetId, "force");
+  return { snapshotId: snapshot.id, restored: restore.restored };
+}
+
 export function versionGet(projectDir: string, id: string): VersionRecord {
   const db = projectDb(projectDir);
   const row = db.prepare(`SELECT * FROM versions WHERE id = ?`).get(id) as VersionRow | undefined;

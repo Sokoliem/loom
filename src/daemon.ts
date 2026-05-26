@@ -5,9 +5,29 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { join } from "node:path";
 import { serverDir, serverPidPath, serverPortPath } from "./core/paths.js";
 import { startWatcher, type WatchEvent, type WatcherHandle } from "./core/watcher.js";
-import { projectCurrent, projectList, requireCurrent } from "./core/project.js";
-import { buildManifest, versionSnapshot } from "./core/version.js";
+import {
+  projectArchive,
+  projectCreate,
+  projectCurrent,
+  projectList,
+  projectOpen,
+  projectUpdate,
+  requireCurrent,
+} from "./core/project.js";
+import {
+  buildManifest,
+  versionList,
+  versionRestoreWithAutoSnapshot,
+  versionSnapshot,
+} from "./core/version.js";
 import { routeList } from "./core/routes.js";
+import { componentList } from "./core/components.js";
+import { loadTokens, resolveAll } from "./core/tokens.js";
+import { gitStatus } from "./core/git.js";
+import { activityBus, activityInsert, activityList } from "./core/activity.js";
+import * as telemetry from "./core/telemetry.js";
+import { config } from "./config.js";
+import type { ActivityEvent, ActivityKind } from "./types.js";
 import { ensureStudio, fullReload, stopAllStudios } from "./studio/server.js";
 import { renderStudioChrome } from "./studio/chrome.js";
 import {
@@ -70,13 +90,57 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
     }
   }
 
+  // Per-(project, file) dedupe window for activity events. Save-storms from
+  // formatter-on-save or build watchers can fire the same path multiple times in
+  // <250ms; we coalesce to a single activity entry per (kind, path) per window.
+  const activityDedupe = new Map<string, number>();
+  const ACTIVITY_DEDUPE_MS = 250;
+  function maybeEmitFileActivity(projectId: string, path: string): void {
+    const key = `${projectId}|${path}`;
+    const now = Date.now();
+    const prev = activityDedupe.get(key);
+    if (prev !== undefined && now - prev < ACTIVITY_DEDUPE_MS) return;
+    activityDedupe.set(key, now);
+    if (activityDedupe.size > 5000) {
+      // Bound the map; drop oldest half.
+      const entries = Array.from(activityDedupe.entries()).sort((a, b) => a[1] - b[1]);
+      for (let i = 0; i < entries.length / 2; i++) activityDedupe.delete(entries[i]![0]);
+    }
+    const rel = path.startsWith(projectId) ? path : path;
+    try {
+      activityInsert({
+        projectId,
+        kind: classifyFileKind(rel),
+        subkind: "changed",
+        title: shortFilename(rel),
+        refPath: rel,
+      });
+    } catch {
+      // best-effort; never block the watcher
+    }
+  }
+
   function ensureWatch(projectDir: string): void {
     if (watchers.has(projectDir)) return;
     const handle = startWatcher(projectDir, (ev) => {
+      const proj = projectList().find((p) => p.path === projectDir);
       if (ev.kind === "manifest_changed") {
         try {
           const v = versionSnapshot(projectDir, "main", { createdBy: "auto" });
           broadcast({ kind: "version_snapshot", projectDir, versionId: v.id });
+          if (proj && config.featureProjectMgmt) {
+            try {
+              activityInsert({
+                projectId: proj.id,
+                kind: "version",
+                subkind: "auto_snapshot",
+                title: `auto-snapshot ${v.id.slice(0, 10)}`,
+                refId: v.id,
+              });
+            } catch {
+              /* never block the watcher */
+            }
+          }
         } catch {
           // ignore — partial states during edit storms
         }
@@ -85,9 +149,11 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
       // reload at the studio iframe. Vite handles route/component HMR itself.
       const path = (ev as { path?: string }).path ?? "";
       if (/[\\/]tokens[\\/]/.test(path)) {
-        const proj = projectList().find((p) => p.path === projectDir);
         if (proj) fullReload(proj.id);
         broadcast({ kind: "token_changed", projectDir, path });
+      }
+      if (proj && path && config.featureProjectMgmt) {
+        maybeEmitFileActivity(proj.id, path);
       }
       broadcast({ projectDir, ...ev });
     });
@@ -174,6 +240,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
           daemonPort: boundPort,
           routes,
           daemonSecret: secret,
+          featureProjectMgmt: config.featureProjectMgmt,
         });
         return reply.type("text/html").send(html);
       } catch (err: unknown) {
@@ -285,6 +352,292 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
       },
     );
   });
+
+  // -- Project-management chrome (v0.10.0) -------------------------------
+  // Gated by LOOM_FEATURE_PROJECT_MGMT=1 so partial deploys can't expose
+  // half-built UI. All routes are thin wrappers around src/core/*.
+  if (config.featureProjectMgmt) {
+    function projectOr404(id: string | undefined, reply: import("fastify").FastifyReply) {
+      const proj = id ? projectList().find((p) => p.id === id) : null;
+      if (!proj) {
+        reply.code(404);
+        return null;
+      }
+      return proj;
+    }
+
+    app.get<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/git-status",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return await gitStatus(proj.path);
+      },
+    );
+
+    app.get<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/routes",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const routes = routeList(proj.path).map((r) => ({
+          path: r.path,
+          file: r.file,
+          meta: r.meta,
+        }));
+        return { routes };
+      },
+    );
+
+    app.get<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/tokens",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const loaded = loadTokens(proj.path);
+        const resolved = resolveAll(loaded.flat);
+        const tokens: Array<{
+          namespace: string;
+          name: string;
+          raw: string;
+          resolved: string | null;
+        }> = [];
+        for (const [key, raw] of loaded.flat) {
+          const [namespace, ...rest] = key.split(".");
+          tokens.push({
+            namespace: namespace ?? "",
+            name: rest.join("."),
+            raw,
+            resolved: resolved.get(key) ?? null,
+          });
+        }
+        tokens.sort((a, b) => a.namespace.localeCompare(b.namespace) || a.name.localeCompare(b.name));
+        return { tokens };
+      },
+    );
+
+    app.get<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/components",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return { components: componentList(proj.path) };
+      },
+    );
+
+    app.get<{ Params: { id: string }; Querystring: { route?: string; limit?: string } }>(
+      "/api/loom/projects/:id/versions",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const limit = clampNumber(req.query.limit, 50, 1, 500);
+        let versions = versionList(proj.path, limit);
+        if (req.query.route) {
+          const route = req.query.route;
+          versions = versions.filter((v) => {
+            const routeFile = route === "/" ? "routes/index.tsx" : `routes${route}.tsx`;
+            return Object.keys(v.files).some((f) => f === routeFile || f.startsWith(`routes${route}/`));
+          });
+        }
+        // Strip the big files map for the list endpoint — chrome only needs metadata.
+        const slim = versions.map((v) => ({
+          id: v.id,
+          parentId: v.parentId,
+          branch: v.branch,
+          label: v.label,
+          message: v.message,
+          createdAt: v.createdAt,
+          createdBy: v.createdBy,
+          fileCount: Object.keys(v.files).length,
+        }));
+        return { versions: slim };
+      },
+    );
+
+    app.get<{ Params: { id: string }; Querystring: { limit?: string; kind?: string } }>(
+      "/api/loom/projects/:id/activity",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const limit = clampNumber(req.query.limit, 50, 1, 500);
+        const kinds = req.query.kind
+          ? (req.query.kind.split(",").filter(Boolean) as ActivityKind[])
+          : undefined;
+        return { events: activityList(proj.id, { limit, ...(kinds ? { kinds } : {}) }) };
+      },
+    );
+
+    app.post<{ Body: { name?: string; template?: "shadcn-starter" | "blank"; path?: string } }>(
+      "/api/loom/projects",
+      async (req, reply) => {
+        const name = (req.body?.name ?? "").trim();
+        if (!name) {
+          reply.code(400);
+          return { error: "name is required" };
+        }
+        try {
+          const startedAt = Date.now();
+          const created = await projectCreate({
+            name,
+            template: req.body?.template,
+            ...(req.body?.path ? { path: req.body.path } : {}),
+          });
+          activityInsert({
+            projectId: created.id,
+            kind: "session",
+            subkind: "created",
+            title: `Project ${created.name} created`,
+          });
+          telemetry.emit({
+            event: "project.create",
+            template: req.body?.template ?? "shadcn-starter",
+            duration_ms: Date.now() - startedAt,
+          });
+          return { project: created };
+        } catch (err: unknown) {
+          reply.code(400);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.post<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/open",
+      async (req, reply) => {
+        try {
+          const startedAt = Date.now();
+          const fromProject = projectCurrent();
+          const opened = projectOpen(req.params.id);
+          activityInsert({
+            projectId: opened.id,
+            kind: "session",
+            subkind: "opened",
+            title: `Project ${opened.name} opened`,
+          });
+          telemetry.emit({
+            event: "project.switch",
+            from_id: fromProject?.id ?? null,
+            to_id: opened.id,
+            duration_ms: Date.now() - startedAt,
+          });
+          return { project: opened };
+        } catch (err: unknown) {
+          reply.code(404);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.patch<{ Params: { id: string }; Body: { name?: string; description?: string } }>(
+      "/api/loom/projects/:id",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          const updated = projectUpdate(proj.id, {
+            ...(req.body?.name !== undefined ? { name: req.body.name } : {}),
+            ...(req.body?.description !== undefined ? { description: req.body.description } : {}),
+          });
+          activityInsert({
+            projectId: updated.id,
+            kind: "session",
+            subkind: "renamed",
+            title: `Project metadata updated`,
+          });
+          return { project: updated };
+        } catch (err: unknown) {
+          reply.code(400);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.post<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/archive",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          activityInsert({
+            projectId: proj.id,
+            kind: "session",
+            subkind: "archived",
+            title: `Project ${proj.name} archived`,
+          });
+          projectArchive(proj.id);
+          return { archived: true };
+        } catch (err: unknown) {
+          reply.code(400);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.post<{ Params: { id: string; vid: string }; Querystring: { route?: string } }>(
+      "/api/loom/projects/:id/versions/:vid/restore",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          const startedAt = Date.now();
+          const result = versionRestoreWithAutoSnapshot(proj.path, "main", req.params.vid);
+          activityInsert({
+            projectId: proj.id,
+            kind: "version",
+            subkind: "restored",
+            title: `Restored ${req.params.vid.slice(0, 10)} (prior state v${result.snapshotId.slice(0, 8)})`,
+            refId: req.params.vid,
+            payload: { priorSnapshotId: result.snapshotId, restoredCount: result.restored },
+          });
+          telemetry.emit({
+            event: "version.restore",
+            route: req.query?.route ?? null,
+            version_id: req.params.vid,
+            duration_ms: Date.now() - startedAt,
+          });
+          return { restored: true, priorSnapshotId: result.snapshotId, files: result.restored };
+        } catch (err: unknown) {
+          reply.code(400);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.register(async (instance) => {
+      instance.get<{ Params: { id: string } }>(
+        "/api/loom/projects/:id/activity/stream",
+        { websocket: true },
+        (connection, req) => {
+          const projectId = req.params.id;
+          const proj = projectList().find((p) => p.id === projectId);
+          if (!proj) {
+            try {
+              connection.send(JSON.stringify({ kind: "error", message: "project not found" }));
+              connection.close();
+            } catch {
+              /* noop */
+            }
+            return;
+          }
+          const channel = `event:${projectId}`;
+          const handler = (event: ActivityEvent): void => {
+            try {
+              connection.send(JSON.stringify({ kind: "event", event }));
+            } catch {
+              /* noop */
+            }
+          };
+          activityBus.on(channel, handler);
+          try {
+            connection.send(JSON.stringify({ kind: "hello", projectId }));
+          } catch {
+            /* noop */
+          }
+          connection.on("close", () => activityBus.off(channel, handler));
+        },
+      );
+    });
+  }
 
   // Vendored browser bundle: rift + the loom terminal client.
   app.get<{ Params: { "*": string } }>(
@@ -457,6 +810,30 @@ function ensureDaemonSecret(): string {
   mkdirSync(serverDir(), { recursive: true });
   writeFileSync(path, secret, { mode: 0o600 });
   return secret;
+}
+
+function classifyFileKind(path: string): ActivityKind {
+  if (/[\\/]tokens[\\/]/.test(path)) return "token";
+  if (/[\\/]components[\\/]/.test(path)) return "component";
+  if (/[\\/]routes[\\/]/.test(path)) return "route";
+  return "file";
+}
+
+function shortFilename(path: string): string {
+  const idx = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
+  return idx >= 0 ? path.slice(idx + 1) : path;
+}
+
+function clampNumber(
+  raw: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (raw === undefined) return fallback;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.max(min, Math.min(max, Math.trunc(n)));
 }
 
 function tokenEquals(a: string, b: string): boolean {

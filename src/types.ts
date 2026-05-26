@@ -112,6 +112,28 @@ export interface PanelFinding {
   suggestedFix: string | null;
 }
 
+export type ActivityKind =
+  | "file"
+  | "forge"
+  | "panel"
+  | "session"
+  | "token"
+  | "component"
+  | "route"
+  | "version";
+
+export interface ActivityEvent {
+  id: string;
+  projectId: ProjectId;
+  kind: ActivityKind;
+  subkind: string | null;
+  title: string;
+  refPath: string | null;
+  refId: string | null;
+  payload: Record<string, unknown> | null;
+  createdAt: number;
+}
+
 export interface PanelReport {
   ts: number;
   scope: string;

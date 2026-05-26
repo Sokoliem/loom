@@ -19,10 +19,38 @@ const INCLUDE = [
   "dist",
   "install",
   "docs",
-  "package.json",
   "README.md",
   "LICENSE",
 ];
+
+// package.json is rewritten (slimmed) before zipping — see slimPackageJson().
+// It is intentionally excluded from INCLUDE so the dev-time file (with `link:` Celestial
+// deps that npm can't install) never lands in the published artifact.
+
+function slimPackageJson() {
+  const src = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  // The MCP server bundle (dist/mcp/server.js) is the only thing executed from the plugin
+  // cache directory. tsup bundles every pure-JS dep via noExternal, leaving only native
+  // bindings as runtime requirements. The daemon/PTY code (which DOES use @celestial/*)
+  // runs from the source repo, never from the cache — so the link: deps must not ship.
+  const RUNTIME_KEEP = new Set(["better-sqlite3"]);
+  const slim = {
+    name: src.name,
+    version: src.version,
+    description: src.description,
+    license: src.license,
+    author: src.author,
+    type: src.type,
+    main: src.main,
+    bin: src.bin,
+    engines: src.engines,
+    dependencies: Object.fromEntries(
+      Object.entries(src.dependencies ?? {}).filter(([k]) => RUNTIME_KEEP.has(k)),
+    ),
+    optionalDependencies: src.optionalDependencies,
+  };
+  return JSON.stringify(slim, null, 2) + "\n";
+}
 
 const OPTIONAL_INCLUDE = ["LICENSE"];
 
@@ -72,6 +100,8 @@ SOFTWARE.
     addRecursive(full, files);
   }
 
+  files.push({ abs: null, rel: "package.json", inlineData: Buffer.from(slimPackageJson(), "utf8") });
+
   await writeZip(DIST_ZIP, files);
 
   // Also write a .plugin metadata file alongside the zip — same content, different name —
@@ -105,7 +135,7 @@ function writeZip(outPath, files) {
   let offset = 0;
 
   for (const f of files) {
-    const data = readFileSync(f.abs);
+    const data = f.inlineData ?? readFileSync(f.abs);
     const compressed = deflateRawSync(data);
     const compressedLen = compressed.length;
     const useDeflate = compressedLen < data.length;

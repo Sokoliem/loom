@@ -1,5 +1,45 @@
 # loom architecture
 
+## Project-management chrome (v0.10.0, flag-gated)
+
+Set `LOOM_FEATURE_PROJECT_MGMT=1` to enable the v0.10.0 studio surface. Layout:
+
+```
+┌─ chrome-bar (existing) ─────────────────────────────────────────┐
+├─ pm-switcher │ pm-project-header                │ pm-activity  ┤
+│              ├─ pm-sidebar (Routes/Tokens/      │              │
+│              │  Components tabs)                │              │
+│   projects   │                                  │  activity    │
+│   list       │   stage:                         │  feed (WS)   │
+│              │   ┌── term-pane ─ split ─ stage ─┐              │
+│              │   │     claude PTY │  iframe     │              │
+│              │   └────────────────┴─────────────┘              │
+│              ├─ pm-version-strip (for current route)            │
+└─ status (existing) ─────────────────────────────────────────────┘
+```
+
+Data path: chrome → `/api/loom/projects[/...]` endpoints (Phase 2/3) → existing
+`src/core/{project,routes,tokens,components,version,git,activity}.ts` modules.
+Live activity push: `/api/loom/projects/:id/activity/stream` (WS) backed by the
+`activityBus` EventEmitter, fed by the chokidar watcher / forge / panel runtimes.
+
+Storage: one additive SQLite table `activity_events` (retained 1000/project,
+trimmed on insert). No breaking schema changes.
+
+Code surfaces:
+- `src/studio/chrome.ts` — composes the new panels into the existing chrome when the flag is on.
+- `src/studio/panels.ts` — switcher / sidebar / project header / version strip / activity drawer (HTML + CSS + browser-side JS).
+- `src/core/activity.ts` — store + in-memory `activityBus`.
+- `src/core/git.ts` — `git status --porcelain=v2` with 2s timeout + 2s cache.
+- `src/core/telemetry.ts` — local-only JSONL events when `LOOM_TELEMETRY=1`.
+- `src/daemon.ts` — registers the 12 new HTTP endpoints + 1 WS handler inside the `config.featureProjectMgmt` gate.
+
+Rollback: revert the feature commit. The `activity_events` table is harmless to leave behind (no FK references). Flag-off chrome is byte-identical to v0.9.6.
+
+---
+
+
+
 ## One-page picture
 
 ```

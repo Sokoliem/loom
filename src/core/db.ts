@@ -26,6 +26,19 @@ const SERVER_SCHEMA = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_telemetry_ts ON telemetry_events(ts)`,
   `CREATE INDEX IF NOT EXISTS idx_telemetry_type ON telemetry_events(event_type)`,
+  `CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subkind TEXT,
+    title TEXT NOT NULL,
+    ref_path TEXT,
+    ref_id TEXT,
+    payload TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_activity_project_created
+    ON activity_events(project_id, created_at DESC)`,
 ];
 
 const PROJECT_SCHEMA = [

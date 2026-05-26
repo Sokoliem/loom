@@ -40636,7 +40636,7 @@ export function ${spec.name}({ children }: ${spec.name}Props) {
 
 // src/core/project.ts
 init_esm_shims();
-import { existsSync as existsSync2, mkdirSync as mkdirSync3, writeFileSync as writeFileSync2 } from "fs";
+import { existsSync as existsSync2, mkdirSync as mkdirSync3, writeFileSync as writeFileSync2, readFileSync as readFileSync2 } from "fs";
 import { join as join3 } from "path";
 
 // node_modules/.pnpm/ulid@2.4.0/node_modules/ulid/dist/index.esm.js
@@ -40758,7 +40758,20 @@ var SERVER_SCHEMA = [
     payload_json TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS idx_telemetry_ts ON telemetry_events(ts)`,
-  `CREATE INDEX IF NOT EXISTS idx_telemetry_type ON telemetry_events(event_type)`
+  `CREATE INDEX IF NOT EXISTS idx_telemetry_type ON telemetry_events(event_type)`,
+  `CREATE TABLE IF NOT EXISTS activity_events (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    subkind TEXT,
+    title TEXT NOT NULL,
+    ref_path TEXT,
+    ref_id TEXT,
+    payload TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_activity_project_created
+    ON activity_events(project_id, created_at DESC)`
 ];
 var PROJECT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS versions (

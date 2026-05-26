@@ -1,4 +1,5 @@
 import type { ProjectRecord } from "../types.js";
+import { panelsBlocks } from "./panels.js";
 
 export interface ChromeContext {
   project: ProjectRecord;
@@ -12,6 +13,11 @@ export interface ChromeContext {
    * browser; the secret protects against cross-origin reads, not local ones.
    */
   daemonSecret: string;
+  /**
+   * When true, render the v0.10.0 project-management surface (switcher, sidebar,
+   * version strip, activity drawer). Sourced from `config.featureProjectMgmt`.
+   */
+  featureProjectMgmt?: boolean;
 }
 
 /**
@@ -26,6 +32,10 @@ export function renderStudioChrome(ctx: ChromeContext): string {
     .join("");
   const initialRoute = ctx.routes.some((r) => r.path === "/") ? "/" : (ctx.routes[0]?.path ?? "/");
   const viteOrigin = `http://127.0.0.1:${ctx.vitePort}`;
+  const pm = ctx.featureProjectMgmt
+    ? panelsBlocks({ project: ctx.project, initialRoute })
+    : { shellBefore: "", shellAfter: "", css: "", script: "" };
+  const bodyAttrs = ctx.featureProjectMgmt ? ' data-pm="1"' : "";
 
   return `<!doctype html>
 <html lang="en">
@@ -33,9 +43,9 @@ export function renderStudioChrome(ctx: ChromeContext): string {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom · ${escapeHtml(ctx.project.name)}</title>
-    <style>${CHROME_CSS}</style>
+    <style>${CHROME_CSS}${pm.css}</style>
   </head>
-  <body>
+  <body${bodyAttrs}>
     <header class="chrome-bar">
       <div class="brand">
         <span class="logo">◐</span>
@@ -70,6 +80,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
         <button id="reload" class="reload" title="Reload preview">↻</button>
       </div>
     </header>
+    ${pm.shellBefore}
 
     <main class="stage" id="stage">
       <section class="term-pane" id="term-pane">
@@ -89,6 +100,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
         </div>
       </section>
     </main>
+    ${pm.shellAfter}
     <div id="flags-modal" class="modal" hidden aria-hidden="true">
       <div class="modal-backdrop" data-modal-close></div>
       <form class="modal-card" id="flags-form">
@@ -162,6 +174,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
     </footer>
 
     <script>${chromeScript(ctx)}</script>
+    ${pm.script ? `<script>${pm.script}</script>` : ""}
   </body>
 </html>
 `;
@@ -276,6 +289,7 @@ const DAEMON_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/ws
 const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/terminal/ws?projectId=${ctx.project.id}`)};
 const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
 const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
+window.__loomDaemonSecret = DAEMON_SECRET;
 const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile · 360", "768x1024": "Tablet · 768", "1280x800": "Desktop · 1280", "1440x900": "Wide · 1440" };
 
 const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
