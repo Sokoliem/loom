@@ -1,6 +1,6 @@
 {
   "name": "loom",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "Design workspace for Claude Code — chat-plus-stage workflow with tokens, components, routes, panel, forge, exports",
   "license": "MIT",
   "author": "Eric Sokolowski",

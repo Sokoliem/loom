@@ -67958,6 +67958,67 @@ function renderStudioChrome(ctx) {
         </div>
       </section>
     </main>
+    <div id="flags-modal" class="modal" hidden aria-hidden="true">
+      <div class="modal-backdrop" data-modal-close></div>
+      <form class="modal-card" id="flags-form">
+        <div class="modal-head">
+          <strong>Start claude session</strong>
+          <span class="modal-sub">flags persist per-project</span>
+        </div>
+        <div class="modal-body">
+          <div class="modal-section">
+            <div class="modal-section-label">Common flags</div>
+            <label class="flag-row">
+              <input type="checkbox" name="flag" value="--dangerously-skip-permissions" />
+              <div>
+                <code>--dangerously-skip-permissions</code>
+                <span>Skip all permission prompts for the session</span>
+              </div>
+            </label>
+            <label class="flag-row">
+              <input type="checkbox" name="flag" value="--continue" />
+              <div>
+                <code>--continue</code>
+                <span>Resume the most recent claude session in this directory</span>
+              </div>
+            </label>
+            <label class="flag-row">
+              <input type="checkbox" name="flag" value="--verbose" />
+              <div>
+                <code>--verbose</code>
+                <span>Verbose logging from the CLI</span>
+              </div>
+            </label>
+            <label class="flag-row">
+              <input type="checkbox" name="flag" value="--no-auto-update" />
+              <div>
+                <code>--no-auto-update</code>
+                <span>Disable auto-update check at startup</span>
+              </div>
+            </label>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-label">Model</div>
+            <select id="flag-model">
+              <option value="">Default (whatever claude picks)</option>
+              <option value="opus">opus</option>
+              <option value="sonnet">sonnet</option>
+              <option value="haiku">haiku</option>
+            </select>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-label">Extra args</div>
+            <input id="flag-extra" type="text" placeholder="e.g. --debug-keys" />
+            <span class="modal-hint">Space-separated; forwarded verbatim to <code>claude</code>.</span>
+          </div>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" data-modal-close>Cancel</button>
+          <button type="submit" class="btn primary">Start session</button>
+        </div>
+      </form>
+    </div>
+
     <script src="/__loom/vendor/terminal.js?v=${Date.now()}" defer></script>
 
     <footer class="status">
@@ -68043,6 +68104,29 @@ body { display: grid; grid-template-rows: auto 1fr auto; }
 iframe { width: 100%; height: 100%; border: 0; display: block; background: white; }
 .viewport-label { position: absolute; top: 6px; right: 8px; background: rgba(0,0,0,0.55); color: white; font-size: 10px; padding: 2px 6px; border-radius: 3px; pointer-events: none; }
 
+.modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; }
+.modal[hidden] { display: none; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(8,10,14,0.55); backdrop-filter: blur(2px); }
+.modal-card { position: relative; background: #15181f; border: 1px solid var(--chrome-border); border-radius: 10px; width: 460px; max-width: calc(100vw - 32px); box-shadow: 0 24px 60px -16px rgba(0,0,0,0.5); display: flex; flex-direction: column; max-height: calc(100vh - 64px); }
+.modal-head { padding: 14px 16px 10px; border-bottom: 1px solid var(--chrome-border); display: flex; align-items: baseline; gap: 8px; }
+.modal-head strong { font-size: 13.5px; font-weight: 600; }
+.modal-sub { font-size: 11px; color: var(--chrome-muted); }
+.modal-body { padding: 12px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+.modal-section { display: flex; flex-direction: column; gap: 6px; }
+.modal-section-label { font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
+.modal-section select, .modal-section input[type=text] { background: #0f1115; border: 1px solid var(--chrome-border); color: var(--chrome-text); border-radius: 5px; padding: 6px 8px; font: inherit; font-size: 12px; }
+.modal-section select:focus, .modal-section input[type=text]:focus { outline: 1px solid var(--chrome-accent); outline-offset: 1px; }
+.modal-hint { font-size: 10.5px; color: var(--chrome-muted); }
+.flag-row { display: flex; align-items: flex-start; gap: 10px; padding: 7px 8px; border-radius: 6px; cursor: pointer; transition: background 80ms; }
+.flag-row:hover { background: #1a1d24; }
+.flag-row input { margin-top: 3px; accent-color: var(--chrome-accent); }
+.flag-row code { display: block; font-family: 'Cascadia Mono', ui-monospace, monospace; font-size: 11.5px; color: var(--chrome-text); }
+.flag-row span { display: block; font-size: 11px; color: var(--chrome-muted); margin-top: 2px; }
+.modal-foot { padding: 10px 16px 14px; border-top: 1px solid var(--chrome-border); display: flex; justify-content: flex-end; gap: 8px; }
+.btn { background: #1a1d24; border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 6px 12px; border-radius: 5px; font: inherit; font-size: 12px; cursor: pointer; }
+.btn.primary { background: var(--chrome-accent); color: #1a1207; font-weight: 600; border-color: transparent; }
+.btn:hover { border-color: var(--chrome-muted); }
+.btn.primary:hover { filter: brightness(1.05); }
 .status { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-top: 1px solid var(--chrome-border); font-size: 11px; color: var(--chrome-muted); background: var(--chrome-bg); }
 .dot { width: 7px; height: 7px; border-radius: 50%; background: #555; }
 .dot.ok { background: var(--chrome-success); }
@@ -68139,14 +68223,14 @@ function setTermStatus(s, detail) {
   termStatus.textContent = label[s] || s;
 }
 
-async function startTerminal() {
+async function startTerminal(flags) {
   termToggle.disabled = true;
   termStatus.textContent = "starting\u2026";
   try {
     const r = await fetch("/api/loom/terminal/start", {
       method: "POST",
       headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
-      body: JSON.stringify({ projectId: PROJECT_ID }),
+      body: JSON.stringify({ projectId: PROJECT_ID, flags: flags || [] }),
     });
     const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
@@ -68188,9 +68272,72 @@ async function stopTerminal() {
   termToggle.disabled = false;
 }
 
+// -- Pre-start config modal --------------------------------------------
+const FLAGS_KEY = "loom:claude-flags:" + PROJECT_ID;
+const flagsModal = $("flags-modal");
+const flagsForm = $("flags-form");
+const flagModel = $("flag-model");
+const flagExtra = $("flag-extra");
+
+function loadFlagsConfig() {
+  try {
+    const raw = localStorage.getItem(FLAGS_KEY);
+    return raw ? JSON.parse(raw) : { checks: [], model: "", extra: "" };
+  } catch {
+    return { checks: [], model: "", extra: "" };
+  }
+}
+function saveFlagsConfig(cfg) {
+  try { localStorage.setItem(FLAGS_KEY, JSON.stringify(cfg)); } catch {}
+}
+function buildFlagsFromConfig(cfg) {
+  const flags = [...(cfg.checks || [])];
+  if (cfg.model) flags.push("--model", cfg.model);
+  if (cfg.extra) {
+    // Split on whitespace; ignore empty tokens. Quoted args aren't supported
+    // here \u2014 for that, edit the persisted JSON directly or pass via MCP.
+    for (const tok of cfg.extra.trim().split(/\\s+/)) if (tok) flags.push(tok);
+  }
+  return flags;
+}
+function populateModalFromConfig(cfg) {
+  for (const cb of flagsForm.querySelectorAll("input[name=flag]")) {
+    cb.checked = (cfg.checks || []).indexOf(cb.value) !== -1;
+  }
+  flagModel.value = cfg.model || "";
+  flagExtra.value = cfg.extra || "";
+}
+function openFlagsModal() {
+  populateModalFromConfig(loadFlagsConfig());
+  flagsModal.removeAttribute("hidden");
+  flagsModal.setAttribute("aria-hidden", "false");
+  setTimeout(() => flagExtra.focus(), 0);
+}
+function closeFlagsModal() {
+  flagsModal.setAttribute("hidden", "");
+  flagsModal.setAttribute("aria-hidden", "true");
+}
+flagsModal.addEventListener("click", (e) => {
+  if (e.target.hasAttribute("data-modal-close")) closeFlagsModal();
+});
+flagsModal.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeFlagsModal();
+});
+flagsForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const cfg = {
+    checks: Array.from(flagsForm.querySelectorAll("input[name=flag]:checked")).map((i) => i.value),
+    model: flagModel.value || "",
+    extra: flagExtra.value || "",
+  };
+  saveFlagsConfig(cfg);
+  closeFlagsModal();
+  startTerminal(buildFlagsFromConfig(cfg));
+});
+
 termToggle.addEventListener("click", () => {
   if (termToggle.hasAttribute("data-running")) stopTerminal();
-  else startTerminal();
+  else openFlagsModal();
 });
 
 // -- Split-pane drag handle ------------------------------------------
@@ -68229,10 +68376,10 @@ import { PtyScreenBuffer } from "@celestial/lens";
 var DEFAULT_COLS = 100;
 var DEFAULT_ROWS = 30;
 var sessions = /* @__PURE__ */ new Map();
-function ensureClaudeSession(project) {
+function ensureClaudeSession(project, opts = {}) {
   const cached = sessions.get(project.id);
   if (cached) return cached;
-  const p = bootSession(project).catch((err) => {
+  const p = bootSession(project, opts).catch((err) => {
     sessions.delete(project.id);
     throw err;
   });
@@ -68259,12 +68406,15 @@ async function stopAllClaudeSessions() {
     })
   );
 }
-async function bootSession(project) {
+async function bootSession(project, opts) {
   const cols = DEFAULT_COLS;
   const rows = DEFAULT_ROWS;
+  const claudeArgs = (opts.flags ?? []).filter(
+    (s) => typeof s === "string" && s.length > 0
+  );
   const runtime = await createClaudeRuntime({
     claudeExecutable: "claude",
-    claudeArgs: [],
+    claudeArgs,
     cwd: project.path,
     cols,
     rows
@@ -68667,8 +68817,9 @@ async function startDaemon(opts = {}) {
         reply.code(404);
         return { error: "project not found" };
       }
+      const flags = Array.isArray(req.body?.flags) ? req.body.flags.filter((s) => typeof s === "string") : [];
       try {
-        await ensureClaudeSession(proj);
+        await ensureClaudeSession(proj, { flags });
         return await sessionStatusAsync(proj.id);
       } catch (err) {
         reply.code(500);
@@ -68851,7 +69002,7 @@ function clearRunFiles() {
   }
 }
 function pkgVersion() {
-  return process.env.LOOM_VERSION ?? "0.9.5";
+  return process.env.LOOM_VERSION ?? "0.9.6";
 }
 function ensureDaemonSecret() {
   const path2 = join11(serverDir(), "secret");

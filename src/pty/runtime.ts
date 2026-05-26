@@ -30,6 +30,11 @@ export interface ClaudeSession {
 
 const sessions = new Map<string, Promise<ClaudeSession>>();
 
+export interface SessionOptions {
+  /** CLI flags forwarded to `claude` (e.g. ["--dangerously-skip-permissions"]). */
+  flags?: readonly string[];
+}
+
 /**
  * Start (or return) a claude session for the given project.
  *
@@ -39,10 +44,13 @@ const sessions = new Map<string, Promise<ClaudeSession>>();
  *     state machine that interprets the PTY's raw output into a cell grid
  *     suitable for browser-side rendering by `@celestial/rift`.
  */
-export function ensureClaudeSession(project: ProjectRecord): Promise<ClaudeSession> {
+export function ensureClaudeSession(
+  project: ProjectRecord,
+  opts: SessionOptions = {},
+): Promise<ClaudeSession> {
   const cached = sessions.get(project.id);
   if (cached) return cached;
-  const p = bootSession(project).catch((err) => {
+  const p = bootSession(project, opts).catch((err) => {
     sessions.delete(project.id);
     throw err;
   });
@@ -77,13 +85,16 @@ export async function stopAllClaudeSessions(): Promise<void> {
   );
 }
 
-async function bootSession(project: ProjectRecord): Promise<ClaudeSession> {
+async function bootSession(project: ProjectRecord, opts: SessionOptions): Promise<ClaudeSession> {
   const cols = DEFAULT_COLS;
   const rows = DEFAULT_ROWS;
+  const claudeArgs = (opts.flags ?? []).filter(
+    (s): s is string => typeof s === "string" && s.length > 0,
+  );
 
   const runtime = await createClaudeRuntime({
     claudeExecutable: "claude",
-    claudeArgs: [],
+    claudeArgs,
     cwd: project.path,
     cols,
     rows,

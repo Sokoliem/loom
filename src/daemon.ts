@@ -220,7 +220,7 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
     },
   );
 
-  app.post<{ Body: { projectId?: string } }>(
+  app.post<{ Body: { projectId?: string; flags?: string[] } }>(
     "/api/loom/terminal/start",
     async (req, reply) => {
       const projectId = req.body?.projectId ?? projectCurrent()?.id;
@@ -229,8 +229,11 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
         reply.code(404);
         return { error: "project not found" };
       }
+      const flags = Array.isArray(req.body?.flags)
+        ? req.body.flags.filter((s): s is string => typeof s === "string")
+        : [];
       try {
-        await ensureClaudeSession(proj);
+        await ensureClaudeSession(proj, { flags });
         return await sessionStatusAsync(proj.id);
       } catch (err: unknown) {
         reply.code(500);
@@ -441,7 +444,7 @@ function clearRunFiles(): void {
 }
 
 function pkgVersion(): string {
-  return process.env.LOOM_VERSION ?? "0.9.5";
+  return process.env.LOOM_VERSION ?? "0.9.6";
 }
 
 function ensureDaemonSecret(): string {

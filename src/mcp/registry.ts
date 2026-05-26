@@ -720,12 +720,18 @@ export function registerAllTools(): ToolRegistry {
   // -- Terminal (claude PTY mirrored to the studio chrome) ---------------
   r.add(
     "terminal_start",
-    "Start a claude PTY session for the project, mirrored to the studio chrome via @celestial/forge + @celestial/lens.",
-    z.object({ projectId: z.string().optional() }),
+    "Start a claude PTY session for the project, mirrored to the studio chrome via @celestial/forge + @celestial/lens. Optional flags are forwarded to the claude CLI (e.g. ['--dangerously-skip-permissions']).",
+    z.object({
+      projectId: z.string().optional(),
+      flags: z.array(z.string()).optional(),
+    }),
     async (input) => {
       const id = input.projectId ?? projectCurrent()?.id;
       if (!id) throw new Error("no project open; pass projectId or open one first");
-      return await daemonFetch("/api/loom/terminal/start", { method: "POST", body: { projectId: id } });
+      return await daemonFetch("/api/loom/terminal/start", {
+        method: "POST",
+        body: { projectId: id, flags: input.flags ?? [] },
+      });
     },
   );
 
