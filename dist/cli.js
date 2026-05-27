@@ -5560,7 +5560,7 @@ var require_thread_stream = __commonJS({
     var { version } = require_package();
     var { EventEmitter: EventEmitter3 } = __require("events");
     var { Worker } = __require("worker_threads");
-    var { join: join14 } = __require("path");
+    var { join: join16 } = __require("path");
     var { pathToFileURL } = __require("url");
     var { wait } = require_wait();
     var {
@@ -5611,7 +5611,7 @@ var require_thread_stream = __commonJS({
     function createWorker(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join14(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join16(__dirname, "lib", "worker.js");
       const worker = new Worker(toExecute, {
         ...opts.workerOpts,
         name: opts.workerOpts?.name || "thread-stream",
@@ -6078,9 +6078,9 @@ var require_transport = __commonJS({
     "use strict";
     init_esm_shims();
     var { createRequire } = __require("module");
-    var { existsSync: existsSync9 } = __require("fs");
+    var { existsSync: existsSync11 } = __require("fs");
     var getCallers = require_caller();
-    var { join: join14, isAbsolute: isAbsolute2, sep: sep3 } = __require("path");
+    var { join: join16, isAbsolute: isAbsolute2, sep: sep3 } = __require("path");
     var { fileURLToPath: fileURLToPath3 } = __require("url");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
@@ -6152,7 +6152,7 @@ var require_transport = __commonJS({
           return false;
         }
       }
-      return isAbsolute2(path2) && !existsSync9(path2);
+      return isAbsolute2(path2) && !existsSync11(path2);
     }
     function stripQuotes(value) {
       const first = value[0];
@@ -6233,7 +6233,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join14(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join16(__dirname, "worker.js");
         options.targets = targets.filter((dest) => dest.target).map((dest) => {
           return {
             ...dest,
@@ -6251,7 +6251,7 @@ var require_transport = __commonJS({
           });
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-worker"] || join14(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join16(__dirname, "worker.js");
         options.pipelines = [pipeline.map((dest) => {
           return {
             ...dest,
@@ -6274,7 +6274,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join14(__dirname, "..", "file.js");
+          return join16(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -7261,7 +7261,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join14 = ",";
+            let join16 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -7275,7 +7275,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join14 = `,
+                join16 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -7283,13 +7283,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join14;
+                res += join16;
               }
               const tmp = stringifyFnReplacer(String(i), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join14}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join16}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -7310,7 +7310,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join14 = `,
+              join16 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -7324,13 +7324,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join14;
+                separator = join16;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join14;
+              separator = join16;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -7371,7 +7371,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join14 = ",";
+            let join16 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -7384,7 +7384,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join14 = `,
+                join16 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -7392,13 +7392,13 @@ ${indentation}`;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join14;
+                res += join16;
               }
               const tmp = stringifyArrayReplacer(String(i), value[i], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join14}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join16}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -7411,7 +7411,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join14 = `,
+              join16 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -7420,7 +7420,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join14;
+                separator = join16;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -7478,20 +7478,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join15 = `,
+              const join17 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i = 0;
               for (; i < maximumValuesToStringify - 1; i++) {
                 const tmp2 = stringifyIndent(String(i), value[i], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join15;
+                res2 += join17;
               }
               const tmp = stringifyIndent(String(i), value[i], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join15}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join17}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -7507,16 +7507,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join14 = `,
+            const join16 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join14, maximumBreadth);
+              res += stringifyTypedArray(value, join16, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join14;
+              separator = join16;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -7527,13 +7527,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join14;
+                separator = join16;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join14;
+              separator = join16;
             }
             if (separator !== "") {
               res = `
@@ -7936,11 +7936,11 @@ var require_pino = __commonJS({
       depthLimit: 5,
       edgeLimit: 100
     };
-    var normalize2 = createArgsNormalizer(defaultOptions2);
+    var normalize3 = createArgsNormalizer(defaultOptions2);
     var serializers = Object.assign(/* @__PURE__ */ Object.create(null), stdSerializers);
     function pino(...args) {
       const instance = {};
-      const { opts, stream } = normalize2(instance, caller(), ...args);
+      const { opts, stream } = normalize3(instance, caller(), ...args);
       if (opts.level && typeof opts.level === "string" && DEFAULT_LEVELS[opts.level.toLowerCase()] !== void 0) opts.level = opts.level.toLowerCase();
       const {
         redact,
@@ -14676,8 +14676,8 @@ var require_resolve = __commonJS({
       }
       return count;
     }
-    function getFullPath(resolver, id = "", normalize2) {
-      if (normalize2 !== false)
+    function getFullPath(resolver, id = "", normalize3) {
+      if (normalize3 !== false)
         id = normalizeId(id);
       const p = resolver.parse(id);
       return _getFullPath(resolver, p);
@@ -16080,7 +16080,7 @@ var require_fast_uri = __commonJS({
     init_esm_shims();
     var { normalizeIPv6, removeDotSegments, recomposeAuthority, normalizePercentEncoding, normalizePathEncoding, escapePreservingEscapes, reescapeHostDelimiters, isIPv4, nonSimpleDomain } = require_utils();
     var { SCHEMES, getSchemeHandler } = require_schemes();
-    function normalize2(uri, options) {
+    function normalize3(uri, options) {
       if (typeof uri === "string") {
         uri = /** @type {T} */
         normalizeString(uri, options);
@@ -16347,7 +16347,7 @@ var require_fast_uri = __commonJS({
     }
     var fastUri = {
       SCHEMES,
-      normalize: normalize2,
+      normalize: normalize3,
       resolve: resolve5,
       resolveComponent,
       equal,
@@ -36258,7 +36258,7 @@ var require_sender = __commonJS({
     var RANDOM_POOL_SIZE = 8 * 1024;
     var randomPool;
     var randomPoolPointer = RANDOM_POOL_SIZE;
-    var DEFAULT = 0;
+    var DEFAULT2 = 0;
     var DEFLATING = 1;
     var GET_BLOB_DATA = 2;
     var Sender = class _Sender {
@@ -36281,7 +36281,7 @@ var require_sender = __commonJS({
         this._compress = false;
         this._bufferedBytes = 0;
         this._queue = [];
-        this._state = DEFAULT;
+        this._state = DEFAULT2;
         this.onerror = NOOP;
         this[kWebSocket] = void 0;
       }
@@ -36418,7 +36418,7 @@ var require_sender = __commonJS({
           readOnly: false,
           rsv1: false
         };
-        if (this._state !== DEFAULT) {
+        if (this._state !== DEFAULT2) {
           this.enqueue([this.dispatch, buf, false, options, cb]);
         } else {
           this.sendFrame(_Sender.frame(buf, options), cb);
@@ -36460,12 +36460,12 @@ var require_sender = __commonJS({
           rsv1: false
         };
         if (isBlob(data)) {
-          if (this._state !== DEFAULT) {
+          if (this._state !== DEFAULT2) {
             this.enqueue([this.getBlobData, data, false, options, cb]);
           } else {
             this.getBlobData(data, false, options, cb);
           }
-        } else if (this._state !== DEFAULT) {
+        } else if (this._state !== DEFAULT2) {
           this.enqueue([this.dispatch, data, false, options, cb]);
         } else {
           this.sendFrame(_Sender.frame(data, options), cb);
@@ -36507,12 +36507,12 @@ var require_sender = __commonJS({
           rsv1: false
         };
         if (isBlob(data)) {
-          if (this._state !== DEFAULT) {
+          if (this._state !== DEFAULT2) {
             this.enqueue([this.getBlobData, data, false, options, cb]);
           } else {
             this.getBlobData(data, false, options, cb);
           }
-        } else if (this._state !== DEFAULT) {
+        } else if (this._state !== DEFAULT2) {
           this.enqueue([this.dispatch, data, false, options, cb]);
         } else {
           this.sendFrame(_Sender.frame(data, options), cb);
@@ -36573,12 +36573,12 @@ var require_sender = __commonJS({
           rsv1
         };
         if (isBlob(data)) {
-          if (this._state !== DEFAULT) {
+          if (this._state !== DEFAULT2) {
             this.enqueue([this.getBlobData, data, this._compress, opts, cb]);
           } else {
             this.getBlobData(data, this._compress, opts, cb);
           }
-        } else if (this._state !== DEFAULT) {
+        } else if (this._state !== DEFAULT2) {
           this.enqueue([this.dispatch, data, this._compress, opts, cb]);
         } else {
           this.dispatch(data, this._compress, opts, cb);
@@ -36621,7 +36621,7 @@ var require_sender = __commonJS({
           this._bufferedBytes -= options[kByteLength];
           const data = toBuffer(arrayBuffer);
           if (!compress) {
-            this._state = DEFAULT;
+            this._state = DEFAULT2;
             this.sendFrame(_Sender.frame(data, options), cb);
             this.dequeue();
           } else {
@@ -36671,7 +36671,7 @@ var require_sender = __commonJS({
             return;
           }
           this._bufferedBytes -= options[kByteLength];
-          this._state = DEFAULT;
+          this._state = DEFAULT2;
           options.readOnly = false;
           this.sendFrame(_Sender.frame(buf, options), cb);
           this.dequeue();
@@ -36683,7 +36683,7 @@ var require_sender = __commonJS({
        * @private
        */
       dequeue() {
-        while (this._state === DEFAULT && this._queue.length) {
+        while (this._state === DEFAULT2 && this._queue.length) {
           const params = this._queue.shift();
           this._bufferedBytes -= params[3][kByteLength];
           Reflect.apply(params[0], this, params.slice(1));
@@ -38721,7 +38721,7 @@ var require_buffer_list = __commonJS({
         }
       }, {
         key: "join",
-        value: function join14(s) {
+        value: function join16(s) {
           if (this.length === 0) return "";
           var p = this.head;
           var ret = "" + p.data;
@@ -63908,9 +63908,9 @@ init_esm_shims();
 init_esm_shims();
 var import_fastify = __toESM(require_fastify(), 1);
 var import_websocket = __toESM(require_websocket2(), 1);
-import { existsSync as existsSync7, mkdirSync as mkdirSync10, readFileSync as readFileSync9, unlinkSync as unlinkSync2, writeFileSync as writeFileSync9 } from "fs";
+import { existsSync as existsSync9, mkdirSync as mkdirSync12, readFileSync as readFileSync10, unlinkSync as unlinkSync2, writeFileSync as writeFileSync10 } from "fs";
 import { randomBytes as randomBytes2, timingSafeEqual } from "crypto";
-import { join as join13 } from "path";
+import { join as join15 } from "path";
 
 // src/core/paths.ts
 init_esm_shims();
@@ -66172,18 +66172,18 @@ function writeShadcnStarter(path2) {
     import_yaml.default.stringify({
       seed: { hue: 250, chroma: 0.2 },
       accent: {
-        primary: "oklch(0.65 {seed.chroma} {seed.hue})",
-        muted: "oklch(0.85 0.05 {seed.hue})"
+        primary: "oklch(0.65 {color.seed.chroma} {color.seed.hue})",
+        muted: "oklch(0.85 0.05 {color.seed.hue})"
       },
       text: {
-        primary: "oklch(0.20 0.02 {seed.hue})",
-        muted: "oklch(0.45 0.02 {seed.hue})"
+        primary: "oklch(0.20 0.02 {color.seed.hue})",
+        muted: "oklch(0.45 0.02 {color.seed.hue})"
       },
       surface: {
-        base: "oklch(0.98 0.01 {seed.hue})",
-        card: "oklch(0.99 0.005 {seed.hue})"
+        base: "oklch(0.98 0.01 {color.seed.hue})",
+        card: "oklch(0.99 0.005 {color.seed.hue})"
       },
-      border: { subtle: "oklch(0.92 0.01 {seed.hue})" }
+      border: { subtle: "oklch(0.92 0.01 {color.seed.hue})" }
     })
   );
   writeFileSync(
@@ -66236,10 +66236,27 @@ function writeShadcnStarter(path2) {
   writeFileSync(
     join4(tokensDir(path2), "theme.yaml"),
     import_yaml.default.stringify({
-      light: { background: "{surface.base}", foreground: "{text.primary}" },
+      light: {
+        background: "{color.surface.base}",
+        foreground: "{color.text.primary}"
+      },
       dark: {
-        background: "oklch(0.18 0.02 {seed.hue})",
-        foreground: "oklch(0.95 0.01 {seed.hue})"
+        background: "oklch(0.16 0.015 {color.seed.hue})",
+        foreground: "oklch(0.95 0.01 {color.seed.hue})",
+        surface: {
+          base: "oklch(0.16 0.015 {color.seed.hue})",
+          card: "oklch(0.20 0.018 {color.seed.hue})"
+        },
+        text: {
+          primary: "oklch(0.95 0.01 {color.seed.hue})",
+          muted: "oklch(0.70 0.015 {color.seed.hue})"
+        },
+        border: {
+          subtle: "oklch(0.30 0.02 {color.seed.hue})"
+        },
+        accent: {
+          primary: "oklch(0.72 {color.seed.chroma} {color.seed.hue})"
+        }
       }
     })
   );
@@ -66772,6 +66789,182 @@ function resolveAll(flat) {
   }
   return out;
 }
+var TOKEN_SEGMENT = /^[A-Za-z][A-Za-z0-9_-]*$|^[0-9]+$/;
+function assertSafeRef(ref, segs) {
+  for (const seg of segs) {
+    if (!TOKEN_SEGMENT.test(seg)) {
+      throw E.invalid(
+        "token reference",
+        `segment "${seg}" must match [A-Za-z][A-Za-z0-9_-]* or be a number (got: "${ref}")`
+      );
+    }
+  }
+}
+function setToken(projectDir, ref, value) {
+  const segs = ref.split(".");
+  if (segs.length < 2) {
+    throw E.invalid("token reference", "use namespace.path form (e.g., color.accent.primary)");
+  }
+  assertSafeRef(ref, segs);
+  const namespace = segs[0];
+  const path2 = segs.slice(1);
+  const dir = tokensDir(projectDir);
+  mkdirSync7(dir, { recursive: true });
+  const file = join9(dir, `${namespace}.yaml`);
+  const tree = existsSync5(file) ? import_yaml3.default.parse(readFileSync6(file, "utf8")) ?? {} : {};
+  setDeep(tree, path2, parseLiteral(value));
+  const { flat } = loadTokens(projectDir);
+  flat.set(ref, String(parseLiteral(value)));
+  resolveAll(flat);
+  writeFileSync6(file, import_yaml3.default.stringify(tree));
+}
+function setDeep(tree, path2, value) {
+  let cur = tree;
+  for (let i = 0; i < path2.length - 1; i++) {
+    const key = path2[i];
+    const next = cur[key];
+    if (next === void 0 || typeof next !== "object" || next === null) {
+      cur[key] = {};
+    }
+    cur = cur[key];
+  }
+  cur[path2[path2.length - 1]] = value;
+}
+function parseLiteral(value) {
+  if (/^-?\d+$/.test(value)) return Number.parseInt(value, 10);
+  if (/^-?\d*\.\d+$/.test(value)) return Number.parseFloat(value);
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return value;
+}
+
+// src/screenshot/index.ts
+init_esm_shims();
+import { mkdirSync as mkdirSync8, existsSync as existsSync6 } from "fs";
+import { join as join10 } from "path";
+var VIEWPORT_PRESETS = {
+  mobile: { width: 360, height: 720 },
+  tablet: { width: 768, height: 1024 },
+  desktop: { width: 1280, height: 800 },
+  wide: { width: 1440, height: 900 }
+};
+function parseViewport(spec) {
+  if (!spec) return VIEWPORT_PRESETS.desktop;
+  const preset = VIEWPORT_PRESETS[spec];
+  if (preset) return preset;
+  const m = spec.match(/^(\d{2,5})x(\d{2,5})$/);
+  if (m) return { width: parseInt(m[1], 10), height: parseInt(m[2], 10) };
+  return VIEWPORT_PRESETS.desktop;
+}
+function slug(path2) {
+  if (path2 === "/" || path2 === "") return "_index";
+  return path2.replace(/^\//, "").replace(/[\/\\]/g, "_").replace(/[^\w.-]/g, "_") || "_index";
+}
+async function captureRouteScreenshot(project, viteUrl, opts) {
+  let playwright = null;
+  try {
+    playwright = await import("playwright");
+  } catch {
+    return {
+      ok: false,
+      reason: "playwright not installed \u2014 run `pnpm add -D playwright && pnpm exec playwright install chromium`"
+    };
+  }
+  const theme = opts.theme === "dark" ? "dark" : "light";
+  const viewportSpec = opts.viewport ?? "desktop";
+  const { width, height } = parseViewport(viewportSpec);
+  const url = new URL(viteUrl);
+  url.searchParams.set("route", opts.path);
+  url.searchParams.set("theme", theme);
+  const dir = snapshotsDir(project.path);
+  if (!existsSync6(dir)) mkdirSync8(dir, { recursive: true });
+  const file = join10(dir, `${slug(opts.path)}_${viewportSpec}_${theme}.png`);
+  let browser = null;
+  try {
+    browser = await playwright.chromium.launch({ headless: true });
+    const ctx = await browser.newContext({
+      viewport: { width, height },
+      deviceScaleFactor: 2
+    });
+    const page = await ctx.newPage();
+    await page.goto(url.toString(), { waitUntil: "networkidle", timeout: 3e4 });
+    await page.waitForTimeout(250);
+    const buf = await page.screenshot({ path: file, fullPage: !!opts.fullPage, type: "png" });
+    return {
+      ok: true,
+      file,
+      bytes: buf.length,
+      width,
+      height,
+      viewport: viewportSpec,
+      theme
+    };
+  } catch (err) {
+    return { ok: false, reason: `screenshot failed: ${err.message}` };
+  } finally {
+    if (browser) {
+      try {
+        await browser.close();
+      } catch {
+      }
+    }
+  }
+}
+
+// src/core/canvas.ts
+init_esm_shims();
+import { existsSync as existsSync7, mkdirSync as mkdirSync9, readFileSync as readFileSync7, writeFileSync as writeFileSync7 } from "fs";
+import { join as join11 } from "path";
+var DEFAULT = {
+  positions: {},
+  view: { x: 0, y: 0, scale: 0.25 }
+};
+function canvasPath(projectDir) {
+  return join11(loomCacheDir(projectDir), "canvas.json");
+}
+function readCanvas(projectDir) {
+  const file = canvasPath(projectDir);
+  if (!existsSync7(file)) return { positions: {}, view: { ...DEFAULT.view } };
+  try {
+    const parsed = JSON.parse(readFileSync7(file, "utf8"));
+    return normalize2(parsed);
+  } catch {
+    return { positions: {}, view: { ...DEFAULT.view } };
+  }
+}
+function writeCanvas(projectDir, state) {
+  const dir = loomCacheDir(projectDir);
+  if (!existsSync7(dir)) mkdirSync9(dir, { recursive: true });
+  const normalized = normalize2(state);
+  writeFileSync7(canvasPath(projectDir), JSON.stringify(normalized, null, 2));
+}
+function normalize2(input) {
+  const obj = input ?? {};
+  const positions = {};
+  if (obj.positions && typeof obj.positions === "object") {
+    for (const [k, v] of Object.entries(obj.positions)) {
+      const pos = v;
+      if (typeof pos?.x === "number" && typeof pos?.y === "number" && Number.isFinite(pos.x) && Number.isFinite(pos.y)) {
+        positions[k] = { x: pos.x, y: pos.y };
+      }
+    }
+  }
+  const view = obj.view ?? DEFAULT.view;
+  return {
+    positions,
+    view: {
+      x: numberOr(view.x, 0),
+      y: numberOr(view.y, 0),
+      scale: clampScale(numberOr(view.scale, 0.25))
+    }
+  };
+}
+function numberOr(value, fallback) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+function clampScale(value) {
+  return Math.max(0.05, Math.min(4, value));
+}
 
 // src/core/git.ts
 init_esm_shims();
@@ -66930,8 +67123,8 @@ function rowToEvent(row) {
 
 // src/core/telemetry.ts
 init_esm_shims();
-import { appendFileSync, mkdirSync as mkdirSync8 } from "fs";
-import { dirname as dirname6, join as join10 } from "path";
+import { appendFileSync, mkdirSync as mkdirSync10 } from "fs";
+import { dirname as dirname6, join as join12 } from "path";
 
 // src/config.ts
 init_esm_shims();
@@ -66941,6 +67134,12 @@ function flag(name) {
 var config = {
   /** Project-management chrome (v0.10.0). Gates new daemon routes + new chrome panels. */
   featureProjectMgmt: flag("LOOM_FEATURE_PROJECT_MGMT"),
+  /** v0.11: routes/components watcher events broadcast to chrome + iframe refresh. */
+  featureLiveNav: flag("LOOM_FEATURE_LIVE_NAV"),
+  /** v0.11: inline-edit tokens panel ("tweaks") with PATCH + CSS-var hot-swap. */
+  featureTweaks: flag("LOOM_FEATURE_TWEAKS"),
+  /** v0.11: multi-route canvas viewport with pan/zoom + persisted frame positions. */
+  featureCanvas: flag("LOOM_FEATURE_CANVAS"),
   /** Local-only JSONL telemetry append to ~/.loom/telemetry.jsonl. */
   telemetry: flag("LOOM_TELEMETRY")
 };
@@ -66949,8 +67148,8 @@ var config = {
 var _path = null;
 function telemetryPath() {
   if (_path) return _path;
-  _path = join10(loomHome(), "telemetry.jsonl");
-  mkdirSync8(dirname6(_path), { recursive: true });
+  _path = join12(loomHome(), "telemetry.jsonl");
+  mkdirSync10(dirname6(_path), { recursive: true });
   return _path;
 }
 function emit(event) {
@@ -67030,27 +67229,27 @@ function dashify(s) {
 
 // src/studio/runtime.ts
 init_esm_shims();
-import { existsSync as existsSync6, mkdirSync as mkdirSync9, writeFileSync as writeFileSync7, readFileSync as readFileSync7 } from "fs";
-import { join as join11 } from "path";
+import { existsSync as existsSync8, mkdirSync as mkdirSync11, writeFileSync as writeFileSync8, readFileSync as readFileSync8 } from "fs";
+import { join as join13 } from "path";
 function ensureStudioRuntime(projectDir) {
-  const studioDir = join11(projectDir, ".loom", "studio");
-  mkdirSync9(studioDir, { recursive: true });
-  writeIfChanged(join11(studioDir, "index.html"), INDEX_HTML);
-  writeIfChanged(join11(studioDir, "main.tsx"), MAIN_TSX);
-  writeIfChanged(join11(studioDir, "router.tsx"), ROUTER_TSX);
-  writeIfChanged(join11(studioDir, "boot.css"), BOOT_CSS);
-  writeIfChanged(join11(studioDir, "tsconfig.json"), JSON.stringify(TSCONFIG, null, 2));
+  const studioDir = join13(projectDir, ".loom", "studio");
+  mkdirSync11(studioDir, { recursive: true });
+  writeIfChanged(join13(studioDir, "index.html"), INDEX_HTML);
+  writeIfChanged(join13(studioDir, "main.tsx"), MAIN_TSX);
+  writeIfChanged(join13(studioDir, "router.tsx"), ROUTER_TSX);
+  writeIfChanged(join13(studioDir, "boot.css"), BOOT_CSS);
+  writeIfChanged(join13(studioDir, "tsconfig.json"), JSON.stringify(TSCONFIG, null, 2));
   return { studioDir };
 }
 function writeIfChanged(path2, content) {
-  if (existsSync6(path2)) {
+  if (existsSync8(path2)) {
     try {
-      const cur = readFileSync7(path2, "utf8");
+      const cur = readFileSync8(path2, "utf8");
       if (cur === content) return;
     } catch {
     }
   }
-  writeFileSync7(path2, content);
+  writeFileSync8(path2, content);
 }
 var TSCONFIG = {
   compilerOptions: {
@@ -67099,6 +67298,39 @@ const layoutMods = import.meta.glob("../../routes/_layout.{tsx,jsx}", { eager: f
   string,
   () => Promise<{ default: React.ComponentType<{ children: React.ReactNode }> }>
 >;
+
+// Hot-swap CSS vars without a full reload when the daemon emits a token change.
+// The chrome.ts WS listener posts \`loom:tokens-changed\` here, and we re-fetch
+// /__loom/tokens.css by tacking a cache-busting query param onto its <link>.
+// We accept messages only from the loom daemon origin to harden against other
+// localhost tabs spamming us; the daemon URL is read from the studio query.
+const LOOM_DAEMON_ORIGIN = (() => {
+  try {
+    const p = new URL(window.location.href).searchParams.get("__loomDaemonOrigin");
+    if (p) return p;
+  } catch {}
+  return null;
+})();
+function isTrustedLoomMessage(e: MessageEvent): boolean {
+  // Same-origin (the chrome iframe-parents us across origins, so the parent's
+  // origin is the daemon's; messages from the parent count as trusted).
+  if (e.source && e.source === window.parent) return true;
+  if (LOOM_DAEMON_ORIGIN && e.origin === LOOM_DAEMON_ORIGIN) return true;
+  return e.origin === window.location.origin;
+}
+window.addEventListener("message", (e: MessageEvent) => {
+  if (!isTrustedLoomMessage(e)) return;
+  if ((e as any)?.data?.kind !== "loom:tokens-changed") return;
+  const link = document.querySelector<HTMLLinkElement>('link[href*="/__loom/tokens.css"]');
+  if (!link) return;
+  try {
+    const u = new URL(link.href, location.origin);
+    u.searchParams.set("ts", String(Date.now()));
+    link.href = u.toString();
+  } catch {
+    /* noop */
+  }
+});
 
 createRoot(document.getElementById("loom-root")!).render(
   <React.StrictMode>
@@ -67162,6 +67394,9 @@ export const Router: React.FC<{ routeMods: LoaderMap; layoutMods: LayoutLoaderMa
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      // Only trust the parent iframe (the loom chrome) \u2014 other localhost tabs
+      // shouldn't be able to drive our route or theme.
+      if (e.source !== window.parent && e.origin !== window.location.origin) return;
       if (e?.data?.kind === "loom:route") setPath(e.data.path || "/");
       if (e?.data?.kind === "loom:theme") {
         const t = e.data.theme === "dark" ? "dark" : "light";
@@ -67197,7 +67432,7 @@ export const Router: React.FC<{ routeMods: LoaderMap; layoutMods: LayoutLoaderMa
 
 // src/vite-plugin-loom-ids/index.ts
 init_esm_shims();
-import { readFileSync as readFileSync8 } from "fs";
+import { readFileSync as readFileSync9 } from "fs";
 import { relative as relative5 } from "path";
 
 // node_modules/.pnpm/magic-string@0.30.21/node_modules/magic-string/dist/magic-string.es.mjs
@@ -68555,29 +68790,44 @@ function panelsBlocks(ctx) {
 function shellBefore(projectId, projectName) {
   return `
     <aside class="pm-switcher" id="pm-switcher" aria-label="Project switcher">
-      <div class="pm-switcher-head">
-        <span class="pm-section-label">Projects</span>
-        <button type="button" id="pm-new-project" class="pm-icon-btn" title="New project">\uFF0B</button>
-      </div>
-      <ul class="pm-switcher-list" id="pm-project-list"></ul>
+      <div class="pm-switcher-list" id="pm-project-list"></div>
+      <button type="button" id="pm-new-project" class="pm-switcher-add" title="New project" aria-label="New project">\uFF0B</button>
     </aside>
     <aside class="pm-sidebar" id="pm-sidebar" aria-label="Project resources">
-      <div class="pm-tabs" role="tablist">
-        <button role="tab" data-tab="routes" class="pm-tab active" aria-selected="true">Routes</button>
-        <button role="tab" data-tab="tokens" class="pm-tab" aria-selected="false">Tokens</button>
-        <button role="tab" data-tab="components" class="pm-tab" aria-selected="false">Components</button>
-      </div>
-      <div class="pm-tab-bodies">
-        <div class="pm-tab-body active" data-tab-body="routes" id="pm-routes-body">
+      <details class="pm-group" data-group="routes" open>
+        <summary><span class="pm-group-label">Routes</span><span class="pm-group-caret">\u25BE</span></summary>
+        <div class="pm-tab-body" data-tab-body="routes" id="pm-routes-body">
           <div class="pm-empty">Loading routes\u2026</div>
         </div>
-        <div class="pm-tab-body" data-tab-body="tokens" id="pm-tokens-body" hidden>
+      </details>
+      <details class="pm-group" data-group="tokens">
+        <summary><span class="pm-group-label">Tokens</span><span class="pm-group-caret">\u25BE</span></summary>
+        <div class="pm-tab-body" data-tab-body="tokens" id="pm-tokens-body">
           <div class="pm-empty">Loading tokens\u2026</div>
         </div>
-        <div class="pm-tab-body" data-tab-body="components" id="pm-components-body" hidden>
+      </details>
+      <details class="pm-group" data-group="components">
+        <summary><span class="pm-group-label">Components</span><span class="pm-group-caret">\u25BE</span></summary>
+        <div class="pm-tab-body" data-tab-body="components" id="pm-components-body">
           <div class="pm-empty">Loading components\u2026</div>
         </div>
-      </div>
+      </details>
+      <details class="pm-group" data-group="activity" id="pm-activity">
+        <summary><span class="pm-group-label">Activity</span><span class="pm-group-caret">\u25BE</span></summary>
+        <div class="pm-tab-body" data-tab-body="activity" id="pm-activity-body">
+          <div class="pm-activity-filters" id="pm-activity-filters">
+            <button class="pm-chip active" data-kind="file" title="file">file</button>
+            <button class="pm-chip active" data-kind="route" title="route">route</button>
+            <button class="pm-chip active" data-kind="token" title="token">token</button>
+            <button class="pm-chip active" data-kind="component" title="component">component</button>
+            <button class="pm-chip active" data-kind="forge" title="forge">forge</button>
+            <button class="pm-chip active" data-kind="panel" title="panel">panel</button>
+            <button class="pm-chip active" data-kind="version" title="version">version</button>
+            <button class="pm-chip active" data-kind="session" title="session">session</button>
+          </div>
+          <ul class="pm-activity-list" id="pm-activity-list"></ul>
+        </div>
+      </details>
     </aside>
     <div class="pm-project-header" id="pm-project-header" data-project="${escAttr(projectId)}">
       <div class="pm-project-name">
@@ -68588,7 +68838,7 @@ function shellBefore(projectId, projectName) {
     </div>
   `;
 }
-function shellAfter(projectId) {
+function shellAfter(_projectId) {
   return `
     <section class="pm-version-strip" id="pm-version-strip" aria-label="Version history for current route">
       <div class="pm-version-head">
@@ -68598,116 +68848,206 @@ function shellAfter(projectId) {
         <div class="pm-empty">No versions yet.</div>
       </div>
     </section>
-    <aside class="pm-activity" id="pm-activity" data-project="${escAttr(projectId)}" aria-label="Activity feed">
-      <div class="pm-activity-head">
-        <span class="pm-section-label">Activity</span>
-        <div class="pm-activity-filters" id="pm-activity-filters">
-          <button class="pm-chip active" data-kind="file">file</button>
-          <button class="pm-chip active" data-kind="route">route</button>
-          <button class="pm-chip active" data-kind="token">token</button>
-          <button class="pm-chip active" data-kind="component">component</button>
-          <button class="pm-chip active" data-kind="forge">forge</button>
-          <button class="pm-chip active" data-kind="panel">panel</button>
-          <button class="pm-chip active" data-kind="version">version</button>
-          <button class="pm-chip active" data-kind="session">session</button>
-        </div>
-      </div>
-      <ul class="pm-activity-list" id="pm-activity-list"></ul>
-    </aside>
   `;
 }
 var PANEL_CSS = `
 body[data-pm="1"] {
   display: grid;
   grid-template-rows: auto auto 1fr auto auto;
-  grid-template-columns: 220px 1fr 280px;
-  grid-template-areas:
-    "header header header"
-    "switcher pmheader activity"
-    "switcher sidebarstage activity"
-    "switcher version activity"
-    "footer footer footer";
+  grid-template-columns: 48px 240px 1fr;
 }
-body[data-pm="1"] .chrome-bar { grid-area: header; }
-body[data-pm="1"] .pm-switcher { grid-area: switcher; }
-body[data-pm="1"] .pm-project-header { grid-area: pmheader; }
-body[data-pm="1"] .pm-activity { grid-area: activity; }
-body[data-pm="1"] .pm-version-strip { grid-area: version; }
-body[data-pm="1"] .status { grid-area: footer; }
-body[data-pm="1"] .stage,
-body[data-pm="1"] .pm-sidebar { grid-area: sidebarstage; }
-body[data-pm="1"] .stage {
-  display: grid;
-  grid-template-columns: 220px var(--split, 460px) 6px 1fr;
+body[data-pm="1"] .chrome-bar { grid-column: 1 / -1; grid-row: 1; }
+body[data-pm="1"] .pm-switcher { grid-column: 1; grid-row: 2 / 5; }
+body[data-pm="1"] .pm-sidebar { grid-column: 2; grid-row: 2 / 5; }
+body[data-pm="1"] .pm-project-header { grid-column: 3; grid-row: 2; }
+body[data-pm="1"] .stage { grid-column: 3; grid-row: 3; }
+body[data-pm="1"] .pm-version-strip { grid-column: 3; grid-row: 4; }
+body[data-pm="1"] .status { grid-column: 1 / -1; grid-row: 5; }
+
+.pm-switcher {
+  background: oklch(0.10 0.01 270);
+  border-right: 1px solid var(--chrome-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 8px;
+  overflow-y: auto;
 }
-body[data-pm="1"] .pm-sidebar { display: contents; }
-
-@media (max-width: 1440px) {
-  body[data-pm="1"][data-pm-collapsed="1"] {
-    grid-template-columns: 0 1fr 0;
-  }
-  body[data-pm="1"][data-pm-collapsed="1"] .pm-switcher,
-  body[data-pm="1"][data-pm-collapsed="1"] .pm-activity { display: none; }
+.pm-switcher-list { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 100%; }
+.pm-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: oklch(0.18 0.01 270);
+  color: var(--chrome-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: 600 12px/1 -apple-system, "Segoe UI", system-ui, sans-serif;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 80ms, border-color 80ms, color 80ms;
 }
+.pm-avatar:hover { background: oklch(0.22 0.01 270); color: var(--chrome-text); }
+.pm-avatar.active { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); }
+.pm-switcher-add {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: transparent; border: 1px dashed var(--chrome-border);
+  color: var(--chrome-muted); cursor: pointer; font-size: 16px; line-height: 1;
+  margin-top: auto; flex-shrink: 0;
+}
+.pm-switcher-add:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
 
-.pm-switcher { background: var(--chrome-bg); border-right: 1px solid var(--chrome-border); padding: 10px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.pm-switcher-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-.pm-switcher-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
-.pm-switcher-list li { padding: 0; margin: 0; }
-.pm-switcher-list a { display: block; padding: 6px 8px; border-radius: 5px; color: var(--chrome-text); text-decoration: none; font-size: 12px; line-height: 1.3; }
-.pm-switcher-list a:hover { background: oklch(0.20 0.01 270); }
-.pm-switcher-list a.active { background: var(--chrome-accent); color: #1a1207; font-weight: 600; }
-.pm-switcher-list a small { display: block; color: var(--chrome-muted); font-size: 10.5px; margin-top: 1px; }
-.pm-switcher-list a.active small { color: rgba(26,18,7,0.7); }
-.pm-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
-.pm-icon-btn { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
-.pm-icon-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
-
-.pm-project-header { padding: 10px 14px; border-bottom: 1px solid var(--chrome-border); background: var(--chrome-bg); display: flex; flex-direction: column; gap: 4px; }
-.pm-project-name { display: flex; align-items: center; gap: 10px; }
-.pm-project-name strong { font-size: 14px; cursor: text; padding: 1px 4px; border-radius: 3px; }
-.pm-project-name strong:hover { background: oklch(0.18 0.01 270); }
-.pm-project-name strong[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); }
-.pm-git { font-size: 10.5px; color: var(--chrome-muted); font-family: ui-monospace, monospace; }
-.pm-git.dirty { color: oklch(0.78 0.16 70); }
-.pm-project-desc { font-size: 11.5px; color: var(--chrome-muted); cursor: text; padding: 1px 4px; border-radius: 3px; }
-.pm-project-desc:hover { background: oklch(0.18 0.01 270); }
-.pm-project-desc[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); color: var(--chrome-text); }
-
-.pm-sidebar { width: 220px; border-right: 1px solid var(--chrome-border); background: oklch(0.13 0.01 270); display: flex; flex-direction: column; min-width: 0; }
-.pm-tabs { display: flex; border-bottom: 1px solid var(--chrome-border); }
-.pm-tab { flex: 1; background: transparent; border: none; padding: 8px 4px; color: var(--chrome-muted); font: inherit; font-size: 11.5px; cursor: pointer; border-bottom: 2px solid transparent; }
-.pm-tab.active { color: var(--chrome-text); border-bottom-color: var(--chrome-accent); }
-.pm-tab-bodies { flex: 1; overflow-y: auto; padding: 8px; }
-.pm-tab-body[hidden] { display: none; }
+.pm-sidebar {
+  background: oklch(0.12 0.01 270);
+  border-right: 1px solid var(--chrome-border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.pm-group { border-bottom: 1px solid var(--chrome-border); display: flex; flex-direction: column; min-height: 0; }
+.pm-group:last-of-type { border-bottom: none; }
+.pm-group[open] { flex: 1 1 auto; min-height: 0; }
+.pm-group > summary {
+  list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: oklch(0.13 0.01 270);
+}
+.pm-group > summary::-webkit-details-marker { display: none; }
+.pm-group > summary:hover { background: oklch(0.16 0.01 270); }
+.pm-group-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px;
+  font-weight: 600; color: var(--chrome-muted);
+}
+.pm-group[open] .pm-group-label { color: var(--chrome-text); }
+.pm-group-caret { color: var(--chrome-muted); font-size: 9px; transition: transform 120ms; transform: rotate(-90deg); }
+.pm-group[open] .pm-group-caret { transform: rotate(0deg); }
+.pm-tab-body {
+  padding: 8px 10px 10px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
 .pm-empty { color: var(--chrome-muted); font-size: 11px; padding: 12px 6px; text-align: center; font-style: italic; }
-.pm-list-row { display: flex; flex-direction: column; padding: 5px 6px; border-radius: 4px; cursor: pointer; font-size: 11.5px; line-height: 1.25; }
+.pm-list-row {
+  display: flex; flex-direction: column;
+  padding: 5px 7px; border-radius: 4px;
+  cursor: pointer; font-size: 11.5px; line-height: 1.25;
+}
 .pm-list-row:hover { background: oklch(0.18 0.01 270); }
 .pm-list-row.active { background: var(--chrome-accent); color: #1a1207; }
 .pm-list-row code { font-family: ui-monospace, monospace; font-size: 11px; }
 .pm-list-row small { color: var(--chrome-muted); font-size: 10px; margin-top: 1px; }
 .pm-list-row.active small { color: rgba(26,18,7,0.7); }
-.pm-search { width: 100%; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 5px 8px; border-radius: 4px; font: inherit; font-size: 11.5px; margin-bottom: 8px; }
+.pm-search {
+  width: 100%;
+  background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border);
+  color: var(--chrome-text);
+  padding: 5px 8px; border-radius: 4px;
+  font: inherit; font-size: 11.5px;
+  margin-bottom: 6px;
+}
 .pm-search:focus { outline: 1px solid var(--chrome-accent); border-color: var(--chrome-accent); }
 .pm-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); vertical-align: -2px; margin-right: 6px; }
+.pm-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
 
-.pm-version-strip { background: var(--chrome-bg); border-top: 1px solid var(--chrome-border); padding: 8px 14px; overflow: hidden; }
-.pm-version-head { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.pm-token-row { gap: 2px; }
+.pm-token-head { display: flex; align-items: center; gap: 6px; }
+.pm-token-value {
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: ui-monospace, monospace;
+  color: var(--chrome-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-token-value:hover { background: oklch(0.20 0.01 270); border-color: var(--chrome-border); color: var(--chrome-text); }
+.pm-token-value.pm-token-broken { color: oklch(0.65 0.18 30); font-style: italic; }
+.pm-token-input {
+  width: 100%;
+  background: oklch(0.16 0.01 270);
+  border: 1px solid var(--chrome-accent);
+  color: var(--chrome-text);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px;
+  outline: none;
+}
+.pm-token-editing .pm-token-head { opacity: 0.7; }
+
+.pm-project-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--chrome-border);
+  background: oklch(0.11 0.01 270);
+  display: flex; align-items: center; gap: 14px;
+}
+.pm-project-name { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.pm-project-name strong { font-size: 14px; cursor: text; padding: 1px 4px; border-radius: 3px; }
+.pm-project-name strong:hover { background: oklch(0.18 0.01 270); }
+.pm-project-name strong[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); }
+.pm-git { font-size: 10.5px; color: var(--chrome-muted); font-family: ui-monospace, monospace; }
+.pm-git.dirty { color: oklch(0.78 0.16 70); }
+.pm-project-desc {
+  font-size: 11.5px; color: var(--chrome-muted);
+  cursor: text; padding: 1px 6px; border-radius: 3px;
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pm-project-desc:hover { background: oklch(0.18 0.01 270); white-space: normal; overflow: visible; }
+.pm-project-desc[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); color: var(--chrome-text); white-space: normal; overflow: visible; }
+
+.pm-version-strip {
+  background: oklch(0.11 0.01 270);
+  border-top: 1px solid var(--chrome-border);
+  padding: 8px 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pm-version-head { display: flex; align-items: center; gap: 8px; }
 .pm-version-head code { color: var(--chrome-text); font-family: ui-monospace, monospace; font-size: 10.5px; }
-.pm-version-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.pm-version-card { flex: 0 0 160px; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.pm-version-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.pm-version-card {
+  flex: 0 0 160px;
+  background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border);
+  border-radius: 6px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 11px;
+}
 .pm-version-card code { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--chrome-muted); }
 .pm-version-card .pm-version-time { color: var(--chrome-muted); font-size: 10px; }
-.pm-version-card .pm-restore-btn { margin-top: 4px; background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); border-radius: 4px; padding: 3px 6px; font-size: 10.5px; cursor: pointer; }
+.pm-version-card .pm-restore-btn {
+  margin-top: 4px;
+  background: transparent; border: 1px solid var(--chrome-border);
+  color: var(--chrome-text); border-radius: 4px;
+  padding: 3px 6px; font-size: 10.5px; cursor: pointer;
+}
 .pm-version-card .pm-restore-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
 
-.pm-activity { background: var(--chrome-bg); border-left: 1px solid var(--chrome-border); overflow-y: auto; display: flex; flex-direction: column; }
-.pm-activity-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--chrome-border); display: flex; flex-direction: column; gap: 6px; }
-.pm-activity-filters { display: flex; flex-wrap: wrap; gap: 4px; }
-.pm-chip { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-muted); font-size: 10px; padding: 2px 6px; border-radius: 10px; cursor: pointer; }
+.pm-activity-filters { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.pm-chip {
+  background: transparent; border: 1px solid var(--chrome-border);
+  color: var(--chrome-muted);
+  font-size: 10px; padding: 2px 6px;
+  border-radius: 10px; cursor: pointer;
+}
 .pm-chip.active { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); font-weight: 600; }
-.pm-activity-list { list-style: none; padding: 6px 6px; margin: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-.pm-activity-list li { padding: 6px 8px; background: oklch(0.16 0.01 270); border-radius: 5px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+.pm-activity-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.pm-activity-list li {
+  padding: 6px 8px; background: oklch(0.16 0.01 270);
+  border-radius: 5px;
+  font-size: 11px; line-height: 1.3;
+  cursor: pointer;
+}
 .pm-activity-list li:hover { background: oklch(0.20 0.01 270); }
 .pm-activity-list li .pm-act-meta { display: flex; gap: 6px; align-items: baseline; color: var(--chrome-muted); font-size: 10px; margin-bottom: 1px; }
 .pm-activity-list li .pm-act-kind { text-transform: uppercase; letter-spacing: 0.5px; font-size: 9px; }
@@ -68751,6 +69091,9 @@ function panelScript(projectId, initialRoute) {
     if (d < 86_400_000) return Math.floor(d / 3_600_000) + "h ago";
     return Math.floor(d / 86_400_000) + "d ago";
   }
+  function initials(name) {
+    return (name || "?").trim().split(/[\\s\\-_]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
+  }
 
   async function loadProjects() {
     try {
@@ -68762,10 +69105,12 @@ function panelScript(projectId, initialRoute) {
         if (p.archived) continue;
         const a = el("a", {
           href: "#",
-          class: p.id === PROJECT_ID ? "active" : "",
+          class: "pm-avatar" + (p.id === PROJECT_ID ? " active" : ""),
+          title: p.name,
+          "aria-label": p.name,
           onclick: (e) => { e.preventDefault(); switchProject(p.id); },
-        }, p.name, el("small", null, p.path.replace(/\\\\/g, "/").split("/").slice(-2).join("/")));
-        list.appendChild(el("li", null, a));
+        }, initials(p.name));
+        list.appendChild(a);
       }
     } catch (err) { console.error("[loom-pm] loadProjects failed", err); }
   }
@@ -68834,7 +69179,6 @@ function panelScript(projectId, initialRoute) {
     const descEl = $("pm-desc");
     const originals = new WeakMap();
     const editable = (node) => () => {
-      // Capture the pre-edit value so a server-side rejection can roll the DOM back.
       originals.set(node, node.textContent || "");
       node.setAttribute("contenteditable", "true");
       node.focus();
@@ -68871,26 +69215,6 @@ function panelScript(projectId, initialRoute) {
     descEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); descEl.blur(); } });
   }
 
-  function wireTabs() {
-    const tabs = document.querySelectorAll(".pm-tab");
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.dataset.tab;
-        tabs.forEach((t) => {
-          t.classList.toggle("active", t === tab);
-          t.setAttribute("aria-selected", t === tab ? "true" : "false");
-        });
-        document.querySelectorAll(".pm-tab-body").forEach((body) => {
-          const match = body.dataset.tabBody === target;
-          body.hidden = !match;
-          body.classList.toggle("active", match);
-        });
-        if (target === "routes") loadRoutes();
-        else if (target === "tokens") loadTokens();
-        else if (target === "components") loadComponents();
-      });
-    });
-  }
   async function loadRoutes() {
     const body = $("pm-routes-body");
     try {
@@ -68937,8 +69261,16 @@ function panelScript(projectId, initialRoute) {
   }
   async function loadTokens() {
     const body = $("pm-tokens-body");
+    // If the user is mid-edit on any row, skip the wholesale re-render so their
+    // input doesn't get torn out of the DOM (losing typed-but-unsaved text).
+    // The next refresh after they settle their edit will catch them up.
+    if (body.querySelector(".pm-token-editing")) return;
     try {
       const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/tokens");
+      if (!r.ok) {
+        body.textContent = "Failed to load tokens (HTTP " + r.status + ").";
+        return;
+      }
       const j = await r.json();
       body.replaceChildren();
       if (!j.tokens || j.tokens.length === 0) {
@@ -68951,17 +69283,90 @@ function panelScript(projectId, initialRoute) {
           body.appendChild(el("div", { class: "pm-section-label", style: "margin: 8px 0 4px 4px;" }, t.namespace));
           currentNs = t.namespace;
         }
-        const display = t.resolved || t.raw || "";
-        const isColor = display.startsWith("oklch") || /^#[0-9a-f]{3,8}$/i.test(display);
-        const row = el("div", { class: "pm-list-row" });
-        const codeWrap = el("div", null);
-        if (isColor) codeWrap.appendChild(el("span", { class: "pm-swatch", style: "background:" + display }));
-        codeWrap.appendChild(el("code", null, t.name));
-        row.appendChild(codeWrap);
-        row.appendChild(el("small", null, display));
-        body.appendChild(row);
+        body.appendChild(renderTokenRow(t));
       }
     } catch (err) { body.textContent = "Failed to load tokens."; }
+  }
+
+  // Inline-editable token row. Click the value to enter edit mode; Enter saves,
+  // Esc cancels. Server validates (e.g. cycle detection) and rolls back the UI
+  // on rejection. Persisted via PATCH /api/loom/projects/:id/tokens.
+  function renderTokenRow(t) {
+    const fullKey = (t.namespace ? t.namespace + "." : "") + t.name;
+    const display = t.resolved || t.raw || "";
+    const isColor = display.startsWith("oklch") || /^#[0-9a-f]{3,8}$/i.test(display);
+    const row = el("div", { class: "pm-list-row pm-token-row" });
+    const codeWrap = el("div", { class: "pm-token-head" });
+    if (isColor) codeWrap.appendChild(el("span", { class: "pm-swatch", style: "background:" + display }));
+    codeWrap.appendChild(el("code", null, t.name));
+    row.appendChild(codeWrap);
+
+    const valueEl = el("small", { class: "pm-token-value", title: "Click to edit" }, t.raw || "");
+    if (t.error) valueEl.classList.add("pm-token-broken");
+    row.appendChild(valueEl);
+
+    let original = t.raw || "";
+    const enterEdit = () => {
+      if (row.classList.contains("pm-token-editing")) return;
+      row.classList.add("pm-token-editing");
+      const input = el("input", { type: "text", value: original, class: "pm-token-input", spellcheck: "false" });
+      valueEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let settled = false;
+      const settle = (commit) => {
+        if (settled) return;
+        settled = true;
+        row.classList.remove("pm-token-editing");
+        const next = input.value;
+        const restore = (text) => {
+          const small = el("small", { class: "pm-token-value", title: "Click to edit" }, text);
+          small.addEventListener("click", enterEdit);
+          input.replaceWith(small);
+        };
+        if (!commit || next === original) {
+          restore(original);
+          return;
+        }
+        savePatch(fullKey, next).then((ok) => {
+          if (ok) {
+            original = next;
+            restore(next);
+            // Resolved display updates on the next loadTokens() refresh, which
+            // fires when the daemon's token_changed event bubbles through the WS
+            // listener in chrome.ts. The CSS hot-swap also fires there.
+          } else {
+            restore(original);
+          }
+        });
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); settle(true); }
+        else if (e.key === "Escape") { e.preventDefault(); settle(false); }
+      });
+      input.addEventListener("blur", () => settle(true));
+    };
+    valueEl.addEventListener("click", enterEdit);
+    return row;
+  }
+
+  async function savePatch(key, value) {
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/tokens", {
+        method: "PATCH",
+        headers: hdrs,
+        body: JSON.stringify({ key, value }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({ error: "HTTP " + r.status }));
+        alert("Token update failed: " + (j.error || "unknown"));
+        return false;
+      }
+      return true;
+    } catch (err) {
+      alert("Token update failed: " + err.message);
+      return false;
+    }
   }
   async function loadComponents() {
     const body = $("pm-components-body");
@@ -69039,9 +69444,9 @@ function panelScript(projectId, initialRoute) {
   }
   function activityClick(e) {
     if (e.refPath && (e.kind === "route" || e.kind === "token" || e.kind === "component")) {
-      const tabName = e.kind === "route" ? "routes" : e.kind === "token" ? "tokens" : "components";
-      const tab = document.querySelector('.pm-tab[data-tab="' + tabName + '"]');
-      if (tab) tab.click();
+      const groupName = e.kind === "route" ? "routes" : e.kind === "token" ? "tokens" : "components";
+      const grp = document.querySelector('.pm-group[data-group="' + groupName + '"]');
+      if (grp) grp.setAttribute("open", "");
     }
   }
   async function loadActivity() {
@@ -69109,13 +69514,14 @@ function panelScript(projectId, initialRoute) {
 
   function boot() {
     $("pm-new-project").addEventListener("click", openCreateDialog);
-    wireTabs();
     wireHeaderEdits();
     wireActivityFilters();
     loadProjects();
     loadGitStatus();
     setInterval(loadGitStatus, 5000);
     loadRoutes();
+    loadTokens();
+    loadComponents();
     loadVersions();
     loadActivity();
     subscribeActivity();
@@ -69129,6 +69535,17 @@ function panelScript(projectId, initialRoute) {
         row.classList.toggle("active", !!code && code.textContent === currentRoute);
       });
     });
+
+    // Wire the v0.11 live-nav bus: chrome.ts emits this CustomEvent after the
+    // daemon WS reports a route/component file change. Re-fetch the sidebar
+    // list so freshly-claude-generated routes appear without page reload.
+    window.addEventListener("loom:routes-refreshed", () => {
+      loadRoutes();
+      loadComponents();
+    });
+    // Token edits fire token_changed from the daemon; chrome.ts re-broadcasts
+    // as a CustomEvent so we can refresh the resolved swatch + value.
+    window.addEventListener("loom:tokens-changed", () => loadTokens());
   }
 
   if (document.readyState === "loading") {
@@ -69149,12 +69566,425 @@ function escAttr(s) {
   return escHtml(s);
 }
 
+// src/studio/canvas.ts
+init_esm_shims();
+function canvasBlocks(ctx) {
+  return {
+    shell: SHELL,
+    css: CANVAS_CSS,
+    script: canvasScript(ctx)
+  };
+}
+var SHELL = `
+<section class="loom-canvas" id="loom-canvas" hidden aria-label="Multi-route canvas">
+  <div class="loom-canvas-stage" id="loom-canvas-stage">
+    <div class="loom-canvas-empty" id="loom-canvas-empty">No routes yet \u2014 generate some with claude.</div>
+  </div>
+  <div class="loom-canvas-toolbar">
+    <button type="button" class="loom-canvas-btn" data-action="auto-layout" title="Auto layout">\u229E Auto layout</button>
+    <button type="button" class="loom-canvas-btn" data-action="reset-view" title="Reset view (1\xD7)">\u2299 Reset</button>
+    <span class="loom-canvas-hint">Space + drag \xB7 Wheel zooms \xB7 Drag titlebar to move</span>
+  </div>
+</section>
+`;
+var CANVAS_CSS = `
+.loom-canvas {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background:
+    radial-gradient(circle, oklch(0.25 0.005 270) 1px, transparent 1px) 0 0 / 24px 24px,
+    var(--stage-bg, oklch(0.18 0.005 270));
+  user-select: none;
+  cursor: grab;
+}
+.loom-canvas[data-panning="1"] { cursor: grabbing; }
+.loom-canvas[hidden] { display: none; }
+.loom-canvas-stage {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+.loom-canvas-empty {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--chrome-muted, #888);
+  font: 13px ui-monospace, monospace;
+  pointer-events: none;
+}
+.loom-canvas-frame {
+  position: absolute;
+  background: white;
+  border: 1px solid var(--chrome-border, #20232a);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 16px 32px -16px rgba(0,0,0,0.35);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+}
+.loom-canvas-frame-bar {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  background: oklch(0.13 0.01 270);
+  color: var(--chrome-text, #e6e8eb);
+  border-bottom: 1px solid var(--chrome-border, #20232a);
+  font: 600 11px -apple-system, "Segoe UI", system-ui, sans-serif;
+  cursor: grab;
+  user-select: none;
+}
+.loom-canvas-frame-bar[data-dragging="1"] { cursor: grabbing; }
+.loom-canvas-frame-bar code {
+  flex: 1;
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.loom-canvas-frame-actions { display: flex; gap: 4px; }
+.loom-canvas-frame-btn {
+  background: transparent;
+  border: 1px solid var(--chrome-border, #20232a);
+  color: var(--chrome-muted, #888);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  cursor: pointer;
+}
+.loom-canvas-frame-btn:hover { color: var(--chrome-text, #e6e8eb); border-color: var(--chrome-accent, #f59462); }
+.loom-canvas-frame iframe { flex: 1; width: 100%; border: 0; background: white; }
+.loom-canvas-toolbar {
+  position: absolute;
+  left: 12px; bottom: 12px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 10px;
+  background: rgba(15, 17, 21, 0.85);
+  border: 1px solid var(--chrome-border, #20232a);
+  border-radius: 8px;
+  backdrop-filter: blur(6px);
+  z-index: 10;
+}
+.loom-canvas-btn {
+  background: transparent; border: 1px solid var(--chrome-border, #20232a);
+  color: var(--chrome-text, #e6e8eb);
+  padding: 3px 8px; border-radius: 5px;
+  font: 600 11px -apple-system, "Segoe UI", system-ui, sans-serif;
+  cursor: pointer;
+}
+.loom-canvas-btn:hover { border-color: var(--chrome-accent, #f59462); color: var(--chrome-accent, #f59462); }
+.loom-canvas-hint {
+  color: var(--chrome-muted, #888);
+  font: 10.5px ui-monospace, monospace;
+}
+`;
+function canvasScript(ctx) {
+  return `
+(function() {
+  const PROJECT_ID = ${JSON.stringify(ctx.projectId)};
+  const VITE_ORIGIN = ${JSON.stringify(`http://127.0.0.1:${ctx.vitePort}`)};
+  const SECRET = ${JSON.stringify(ctx.daemonSecret)};
+  const hdrs = { "content-type": "application/json", "x-loom-secret": SECRET };
+  const FRAME_W = 1280;
+  const FRAME_H = 800;
+  const GUTTER = 80;
+  const TITLE_BAR = 28;
+
+  const canvas = document.getElementById("loom-canvas");
+  const stage = document.getElementById("loom-canvas-stage");
+  const emptyEl = document.getElementById("loom-canvas-empty");
+  if (!canvas || !stage) return;
+
+  const view = { x: 0, y: 0, scale: 0.25 };
+  const positions = {}; // route \u2192 { x, y }
+  let booted = false;
+  let frameNodes = new Map();
+
+  function applyView() {
+    stage.style.transform = "translate(" + view.x + "px, " + view.y + "px) scale(" + view.scale + ")";
+  }
+
+  function autoLayout(paths) {
+    const cols = Math.max(1, Math.ceil(Math.sqrt(paths.length)));
+    paths.forEach((p, i) => {
+      const col = i % cols;
+      const row = Math.floor(i / cols);
+      positions[p] = {
+        x: col * (FRAME_W + GUTTER),
+        y: row * (FRAME_H + TITLE_BAR + GUTTER),
+      };
+    });
+    persistCanvas();
+  }
+
+  let persistTimer = null;
+  function persistCanvas() {
+    // Debounced: wheel-zoom and rapid pan fire 60+ Hz. Without this each event
+    // would PUT canvas.json synchronously, racing the writes and risking
+    // partial reads. 250 ms trailing balances responsiveness against churn.
+    if (persistTimer) clearTimeout(persistTimer);
+    persistTimer = setTimeout(() => {
+      persistTimer = null;
+      fetch("/api/loom/projects/" + PROJECT_ID + "/canvas", {
+        method: "PUT",
+        headers: hdrs,
+        body: JSON.stringify({ positions, view }),
+      }).catch(() => { /* ignore \u2014 best-effort persistence */ });
+    }, 250);
+  }
+
+  function makeFrame(path) {
+    const frame = document.createElement("div");
+    frame.className = "loom-canvas-frame";
+    frame.dataset.route = path;
+    frame.style.width = FRAME_W + "px";
+    frame.style.height = (FRAME_H + TITLE_BAR) + "px";
+
+    const bar = document.createElement("div");
+    bar.className = "loom-canvas-frame-bar";
+    const code = document.createElement("code");
+    code.textContent = path;
+    bar.appendChild(code);
+
+    const actions = document.createElement("div");
+    actions.className = "loom-canvas-frame-actions";
+    const openBtn = document.createElement("button");
+    openBtn.type = "button"; openBtn.className = "loom-canvas-frame-btn";
+    openBtn.textContent = "Open"; openBtn.title = "Open this route in the single-iframe stage";
+    openBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const picker = document.getElementById("viewport-picker");
+      const routePicker = document.getElementById("route-picker");
+      if (routePicker) { routePicker.value = path; routePicker.dispatchEvent(new Event("change")); }
+      if (picker) { picker.value = "fit"; picker.dispatchEvent(new Event("change")); }
+    });
+    const shotBtn = document.createElement("button");
+    shotBtn.type = "button"; shotBtn.className = "loom-canvas-frame-btn";
+    shotBtn.textContent = "\u{1F4F8}"; shotBtn.title = "Screenshot this route";
+    shotBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      shotBtn.disabled = true;
+      try {
+        const r = await fetch("/api/loom/screenshot", {
+          method: "POST",
+          headers: hdrs,
+          body: JSON.stringify({ projectId: PROJECT_ID, path, viewport: "desktop", theme: "light" }),
+        });
+        const j = await r.json();
+        if (!r.ok || j.ok === false) {
+          alert("Screenshot failed: " + (j.reason || j.error || "unknown"));
+        }
+      } catch (err) {
+        alert("Screenshot error: " + err.message);
+      } finally {
+        shotBtn.disabled = false;
+      }
+    });
+    actions.appendChild(openBtn);
+    actions.appendChild(shotBtn);
+    bar.appendChild(actions);
+
+    const iframe = document.createElement("iframe");
+    iframe.src = VITE_ORIGIN + "/?route=" + encodeURIComponent(path) + "&theme=light";
+    iframe.loading = "lazy";
+
+    frame.appendChild(bar);
+    frame.appendChild(iframe);
+
+    // Per-frame drag via the title bar.
+    let dragging = false;
+    let startX = 0, startY = 0, originX = 0, originY = 0;
+    bar.addEventListener("pointerdown", (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      dragging = true;
+      bar.setAttribute("data-dragging", "1");
+      bar.setPointerCapture(e.pointerId);
+      startX = e.clientX; startY = e.clientY;
+      const pos = positions[path] || { x: 0, y: 0 };
+      originX = pos.x; originY = pos.y;
+    });
+    bar.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = (e.clientX - startX) / view.scale;
+      const dy = (e.clientY - startY) / view.scale;
+      const next = { x: originX + dx, y: originY + dy };
+      positions[path] = next;
+      frame.style.left = next.x + "px";
+      frame.style.top = next.y + "px";
+    });
+    bar.addEventListener("pointerup", (e) => {
+      if (!dragging) return;
+      dragging = false;
+      bar.removeAttribute("data-dragging");
+      try { bar.releasePointerCapture(e.pointerId); } catch {}
+      persistCanvas();
+    });
+
+    return frame;
+  }
+
+  function renderFrames(paths) {
+    frameNodes.forEach((node) => node.remove());
+    frameNodes = new Map();
+    if (paths.length === 0) { emptyEl.hidden = false; return; }
+    emptyEl.hidden = true;
+    for (const p of paths) {
+      const pos = positions[p] || { x: 0, y: 0 };
+      const node = makeFrame(p);
+      node.style.left = pos.x + "px";
+      node.style.top = pos.y + "px";
+      stage.appendChild(node);
+      frameNodes.set(p, node);
+    }
+  }
+
+  async function fetchRoutes() {
+    const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/routes");
+    if (!r.ok) return [];
+    const j = await r.json();
+    return (j.routes || []).map((rt) => rt.path).sort();
+  }
+
+  async function loadCanvas() {
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/canvas");
+      if (r.ok) {
+        const j = await r.json();
+        if (j.positions) Object.assign(positions, j.positions);
+        if (j.view) Object.assign(view, j.view);
+      }
+    } catch { /* ignore \u2014 fall through to auto layout */ }
+  }
+
+  async function activate() {
+    if (booted) return;
+    booted = true;
+    await loadCanvas();
+    const paths = await fetchRoutes();
+    // Any route lacking a persisted position \u2192 run a fresh auto layout.
+    const missing = paths.filter((p) => !positions[p]);
+    if (missing.length > 0 && Object.keys(positions).length === 0) {
+      autoLayout(paths);
+    } else if (missing.length > 0) {
+      // Append new routes to the next free row.
+      const existing = Object.keys(positions).length;
+      missing.forEach((p, i) => {
+        const idx = existing + i;
+        const cols = Math.max(1, Math.ceil(Math.sqrt(paths.length)));
+        positions[p] = {
+          x: (idx % cols) * (FRAME_W + GUTTER),
+          y: Math.floor(idx / cols) * (FRAME_H + TITLE_BAR + GUTTER),
+        };
+      });
+      persistCanvas();
+    }
+    applyView();
+    renderFrames(paths);
+  }
+
+  // Public on/off API used by the chrome viewport picker.
+  window.__loomCanvas = {
+    show: () => { canvas.hidden = false; activate(); },
+    hide: () => { canvas.hidden = true; },
+    refresh: async () => {
+      const paths = await fetchRoutes();
+      renderFrames(paths);
+    },
+  };
+
+  // Wheel-zoom (centered on pointer in stage coords).
+  canvas.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const sx = (px - view.x) / view.scale;
+    const sy = (py - view.y) / view.scale;
+    const factor = e.deltaY > 0 ? 0.9 : 1.1;
+    const nextScale = Math.max(0.05, Math.min(2, view.scale * factor));
+    view.x = px - sx * nextScale;
+    view.y = py - sy * nextScale;
+    view.scale = nextScale;
+    applyView();
+    persistCanvas();
+  }, { passive: false });
+
+  // Space + drag pan, OR middle-mouse drag pan.
+  let spaceHeld = false;
+  let panning = false;
+  let panStart = { x: 0, y: 0, vx: 0, vy: 0 };
+  // Gate on canvas visibility AND non-editable target so the space bar in a
+  // token-edit input or the project header contenteditable doesn't toggle
+  // the pan cursor. (The token-edit input is in the chrome, not the canvas,
+  // but our listener is on window.)
+  function isEditableTarget(target) {
+    if (!(target instanceof Element)) return false;
+    const tag = target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+    return target.closest('[contenteditable="true"]') != null;
+  }
+  window.addEventListener("keydown", (e) => {
+    if (canvas.hidden) return;
+    if (isEditableTarget(e.target)) return;
+    if (e.key === " ") { spaceHeld = true; e.preventDefault(); }
+  });
+  window.addEventListener("keyup", (e) => { if (e.key === " ") spaceHeld = false; });
+  canvas.addEventListener("pointerdown", (e) => {
+    const isPanGesture = (spaceHeld && e.button === 0) || e.button === 1;
+    if (!isPanGesture) return;
+    e.preventDefault();
+    panning = true;
+    canvas.dataset.panning = "1";
+    canvas.setPointerCapture(e.pointerId);
+    panStart = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y };
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    if (!panning) return;
+    view.x = panStart.vx + (e.clientX - panStart.x);
+    view.y = panStart.vy + (e.clientY - panStart.y);
+    applyView();
+  });
+  canvas.addEventListener("pointerup", (e) => {
+    if (!panning) return;
+    panning = false;
+    delete canvas.dataset.panning;
+    try { canvas.releasePointerCapture(e.pointerId); } catch {}
+    persistCanvas();
+  });
+
+  // Toolbar buttons.
+  document.querySelectorAll(".loom-canvas-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      if (btn.dataset.action === "auto-layout") {
+        const paths = await fetchRoutes();
+        autoLayout(paths);
+        renderFrames(paths);
+      } else if (btn.dataset.action === "reset-view") {
+        view.x = 0; view.y = 0; view.scale = 0.25;
+        applyView(); persistCanvas();
+      }
+    });
+  });
+
+  // Routes refreshed elsewhere \u2192 re-render canvas if it's visible.
+  window.addEventListener("loom:routes-refreshed", () => {
+    if (!canvas.hidden) window.__loomCanvas.refresh();
+  });
+})();
+`;
+}
+
 // src/studio/chrome.ts
 function renderStudioChrome(ctx) {
   const routes = ctx.routes.map((r) => r.path).sort().map((p) => `<option value="${escapeHtml(p)}">${escapeHtml(p)}</option>`).join("");
   const initialRoute = ctx.routes.some((r) => r.path === "/") ? "/" : ctx.routes[0]?.path ?? "/";
   const viteOrigin = `http://127.0.0.1:${ctx.vitePort}`;
   const pm = ctx.featureProjectMgmt ? panelsBlocks({ project: ctx.project, initialRoute }) : { shellBefore: "", shellAfter: "", css: "", script: "" };
+  const canvas = canvasBlocks({
+    projectId: ctx.project.id,
+    vitePort: ctx.vitePort,
+    daemonSecret: ctx.daemonSecret
+  });
   const bodyAttrs = ctx.featureProjectMgmt ? ' data-pm="1"' : "";
   return `<!doctype html>
 <html lang="en">
@@ -69162,7 +69992,7 @@ function renderStudioChrome(ctx) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom \xB7 ${escapeHtml(ctx.project.name)}</title>
-    <style>${CHROME_CSS}${pm.css}</style>
+    <style>${CHROME_CSS}${pm.css}${canvas.css}</style>
   </head>
   <body${bodyAttrs}>
     <header class="chrome-bar">
@@ -69187,6 +70017,7 @@ function renderStudioChrome(ctx) {
             <option value="768x1024">Tablet \xB7 768</option>
             <option value="1280x800">Desktop \xB7 1280</option>
             <option value="1440x900">Wide \xB7 1440</option>
+            <option value="canvas">Canvas \xB7 all routes</option>
           </select>
         </label>
         <div class="ctrl-group">
@@ -69217,6 +70048,7 @@ function renderStudioChrome(ctx) {
           <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
           <div class="viewport-label"><span id="vp-label">Fit</span></div>
         </div>
+        ${canvas.shell}
       </section>
     </main>
     ${pm.shellAfter}
@@ -69294,6 +70126,7 @@ function renderStudioChrome(ctx) {
 
     <script>${chromeScript(ctx)}</script>
     ${pm.script ? `<script>${pm.script}</script>` : ""}
+    <script>${canvas.script}</script>
   </body>
 </html>
 `;
@@ -69405,9 +70238,16 @@ const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/term
 const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
 const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
 window.__loomDaemonSecret = DAEMON_SECRET;
-const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile \xB7 360", "768x1024": "Tablet \xB7 768", "1280x800": "Desktop \xB7 1280", "1440x900": "Wide \xB7 1440" };
+const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile \xB7 360", "768x1024": "Tablet \xB7 768", "1280x800": "Desktop \xB7 1280", "1440x900": "Wide \xB7 1440", canvas: "Canvas" };
 
-const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
+const THEME_KEY = "loom:theme:" + ${JSON.stringify(ctx.project.id)};
+function loadTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === "dark" ? "dark" : "light";
+  } catch { return "light"; }
+}
+const state = { route: ${JSON.stringify(initialRoute)}, theme: loadTheme(), viewport: "fit" };
 const $ = (id) => document.getElementById(id);
 
 function syncIframe() {
@@ -69419,9 +70259,22 @@ function syncIframe() {
   iframe.src = url.toString();
 }
 
+function applyThemeButtons() {
+  document.querySelectorAll(".seg button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.theme === state.theme);
+    b.setAttribute("aria-pressed", b.dataset.theme === state.theme ? "true" : "false");
+  });
+}
+applyThemeButtons();
+
 function postToIframe(msg) {
   const iframe = $("preview");
-  try { iframe.contentWindow && iframe.contentWindow.postMessage(msg, "*"); } catch {}
+  // Target the Vite origin explicitly so a navigated-away iframe can't receive
+  // the message in some other context. Falls back to "*" only if VITE_ORIGIN
+  // isn't a valid URL (shouldn't happen \u2014 daemon emits a literal http://...).
+  let target = "*";
+  try { target = new URL(VITE_ORIGIN).origin; } catch {}
+  try { iframe.contentWindow && iframe.contentWindow.postMessage(msg, target); } catch {}
 }
 
 $("route-picker").value = state.route;
@@ -69432,22 +70285,73 @@ $("route-picker").addEventListener("change", (e) => {
 
 $("viewport-picker").addEventListener("change", (e) => {
   state.viewport = e.target.value;
-  $("frame-wrap").setAttribute("data-viewport", state.viewport);
-  $("vp-label").textContent = VIEWPORT_LABELS[state.viewport] || state.viewport;
+  const frameWrap = $("frame-wrap");
+  if (state.viewport === "canvas") {
+    frameWrap.style.display = "none";
+    if (window.__loomCanvas) window.__loomCanvas.show();
+  } else {
+    frameWrap.style.display = "";
+    frameWrap.setAttribute("data-viewport", state.viewport);
+    $("vp-label").textContent = VIEWPORT_LABELS[state.viewport] || state.viewport;
+    if (window.__loomCanvas) window.__loomCanvas.hide();
+  }
 });
 
 for (const btn of document.querySelectorAll(".seg button")) {
   btn.addEventListener("click", () => {
     state.theme = btn.dataset.theme;
-    document.querySelectorAll(".seg button").forEach((b) => {
-      b.classList.toggle("active", b.dataset.theme === state.theme);
-      b.setAttribute("aria-pressed", b.dataset.theme === state.theme ? "true" : "false");
-    });
+    try { localStorage.setItem(THEME_KEY, state.theme); } catch {}
+    applyThemeButtons();
     postToIframe({ kind: "loom:theme", theme: state.theme });
   });
 }
 
+// If the persisted theme differs from the iframe's initial query-string, push
+// the message immediately so the user lands on the right theme without having
+// to click. The iframe applies it via the postMessage listener in runtime.ts.
+if (state.theme !== "light") {
+  setTimeout(() => postToIframe({ kind: "loom:theme", theme: state.theme }), 0);
+}
+
 $("reload").addEventListener("click", syncIframe);
+
+// Refresh the top route-picker <select> from the daemon's current view. The
+// picker is server-rendered once at chrome boot; this lets new routes added
+// at runtime (e.g. claude scaffolds /policies during a session) appear without
+// a hard page reload. Also rebroadcasts via CustomEvent so the v0.10 sidebar
+// panel script can refresh its own list.
+async function refreshRoutePicker() {
+  try {
+    const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/routes");
+    if (!r.ok) return;
+    const j = await r.json();
+    const routes = (j.routes || []).map((rt) => rt.path).sort();
+    const picker = $("route-picker");
+    const cur = picker.value;
+    picker.replaceChildren();
+    for (const p of routes) {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      picker.appendChild(opt);
+    }
+    if (routes.indexOf(cur) >= 0) picker.value = cur;
+    else if (routes.length > 0) {
+      picker.value = routes[0];
+      state.route = routes[0];
+    }
+    window.dispatchEvent(new CustomEvent("loom:routes-refreshed", { detail: { routes } }));
+  } catch { /* noop */ }
+}
+
+let routeRefreshTimer = null;
+function scheduleRouteRefresh() {
+  if (routeRefreshTimer) clearTimeout(routeRefreshTimer);
+  routeRefreshTimer = setTimeout(async () => {
+    routeRefreshTimer = null;
+    await refreshRoutePicker();
+    syncIframe();
+  }, 150);
+}
 
 // WS connection to daemon \u2014 react to file changes by either telling Vite to reload
 // (Vite handles HMR itself for module changes) or doing a hard reload for token changes.
@@ -69463,9 +70367,18 @@ function connectWS() {
         const m = JSON.parse(ev.data);
         if (m.kind === "manifest_changed" || m.kind === "route_changed" || m.kind === "token_changed") {
           last.textContent = m.kind + " \xB7 " + new Date().toLocaleTimeString();
-          // tokens.css needs a hard reload (HMR can't see the daemon-served CSS)
+          // Token changes: soft-refresh the iframe's <link rel="stylesheet"> so
+          // user edits land in <200ms without losing scroll position or React
+          // state. The runtime.ts listener handles loom:tokens-changed.
           if (m.kind === "token_changed" || (m.path && /tokens\\//.test(m.path))) {
-            syncIframe();
+            postToIframe({ kind: "loom:tokens-changed" });
+            window.dispatchEvent(new CustomEvent("loom:tokens-changed"));
+          }
+          // routes/ and components/ changes \u2014 Vite picks up the file but its
+          // import.meta.glob result is captured at iframe boot, so new routes
+          // remain invisible to the in-iframe Router until full reload.
+          if (m.kind === "route_changed" && m.path && /[\\/](routes|components)[\\/]/.test(m.path)) {
+            scheduleRouteRefresh();
           }
         }
       } catch {}
@@ -69490,11 +70403,12 @@ function setTermStatus(s, detail) {
 async function startTerminal(flags) {
   termToggle.disabled = true;
   termStatus.textContent = "starting\u2026";
+  const sentFlags = flags || [];
   try {
     const r = await fetch("/api/loom/terminal/start", {
       method: "POST",
       headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
-      body: JSON.stringify({ projectId: PROJECT_ID, flags: flags || [] }),
+      body: JSON.stringify({ projectId: PROJECT_ID, flags: sentFlags }),
     });
     const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
@@ -69514,6 +70428,11 @@ async function startTerminal(flags) {
     wsUrl: TERM_WS,
     onStatus: setTermStatus,
   });
+  // Echo the actual argv handed to claude so users can verify their flags
+  // landed end-to-end. Truncate at 80 chars to fit the term header strip.
+  const argv = sentFlags.length ? sentFlags.join(" ") : "(no flags)";
+  termStatus.title = "claude " + argv;
+  termStatus.textContent = "live \xB7 " + (argv.length > 60 ? argv.slice(0, 57) + "\u2026" : argv);
   termToggle.textContent = "Stop";
   termToggle.setAttribute("data-running", "1");
   termToggle.disabled = false;
@@ -69546,7 +70465,9 @@ const flagExtra = $("flag-extra");
 function loadFlagsConfig() {
   try {
     const raw = localStorage.getItem(FLAGS_KEY);
-    return raw ? JSON.parse(raw) : { checks: [], model: "", extra: "" };
+    const cfg = raw ? JSON.parse(raw) : { checks: [], model: "", extra: "" };
+    console.log("[loom-flags] loaded for", PROJECT_ID, cfg);
+    return cfg;
   } catch {
     return { checks: [], model: "", extra: "" };
   }
@@ -69558,8 +70479,6 @@ function buildFlagsFromConfig(cfg) {
   const flags = [...(cfg.checks || [])];
   if (cfg.model) flags.push("--model", cfg.model);
   if (cfg.extra) {
-    // Split on whitespace; ignore empty tokens. Quoted args aren't supported
-    // here \u2014 for that, edit the persisted JSON directly or pass via MCP.
     for (const tok of cfg.extra.trim().split(/\\s+/)) if (tok) flags.push(tok);
   }
   return flags;
@@ -69650,6 +70569,9 @@ function ensureClaudeSession(project, opts = {}) {
   sessions.set(project.id, p);
   return p;
 }
+function getClaudeSession(projectId) {
+  return sessions.get(projectId);
+}
 async function stopClaudeSession(projectId) {
   const p = sessions.get(projectId);
   if (!p) return;
@@ -69676,6 +70598,9 @@ async function bootSession(project, opts) {
   const claudeArgs = (opts.flags ?? []).filter(
     (s) => typeof s === "string" && s.length > 0
   );
+  console.log(
+    `[loom-pty] spawning claude argv=${JSON.stringify(claudeArgs)} cwd=${project.path}`
+  );
   const runtime = await createClaudeRuntime({
     claudeExecutable: "claude",
     claudeArgs,
@@ -69687,7 +70612,14 @@ async function bootSession(project, opts) {
   const frameListeners = /* @__PURE__ */ new Set();
   const exitListeners = /* @__PURE__ */ new Set();
   const removeData = runtime.ptyHandle.onData((chunk) => {
-    screen.write(chunk);
+    try {
+      screen.write(chunk);
+    } catch (err) {
+      console.error(
+        `[loom-pty] screen.write failed for project=${project.id}: ${err.stack || err.message}`
+      );
+      return;
+    }
     for (const cb of frameListeners) {
       try {
         cb();
@@ -69750,9 +70682,9 @@ import {
 import { wrapBracketedPaste } from "@celestial/nebula";
 import { keyToBuffer } from "@celestial/telescope";
 import { randomUUID } from "crypto";
-import { writeFileSync as writeFileSync8 } from "fs";
+import { writeFileSync as writeFileSync9 } from "fs";
 import { tmpdir } from "os";
-import { join as join12 } from "path";
+import { join as join14 } from "path";
 var PASTE_IMAGE_EXT = {
   "image/png": "png",
   "image/jpeg": "jpg",
@@ -69774,9 +70706,9 @@ function writePastedImageToTmp(dataBase64, mime, filename) {
   if (bytes.length === 0) return null;
   const ext = PASTE_IMAGE_EXT[mime?.toLowerCase() ?? ""] ?? "bin";
   const safe = filename && /^[\w.-]+$/.test(filename) ? filename : `loom-paste-${randomUUID()}.${ext}`;
-  const path2 = join12(tmpdir(), safe);
+  const path2 = join14(tmpdir(), safe);
   try {
-    writeFileSync8(path2, bytes);
+    writeFileSync9(path2, bytes);
   } catch {
     return null;
   }
@@ -70032,7 +70964,7 @@ async function startDaemon(opts = {}) {
     "/api/loom/watch",
     async (req, reply) => {
       const path2 = req.body?.path;
-      if (!path2 || !existsSync7(path2)) {
+      if (!path2 || !existsSync9(path2)) {
         reply.code(400);
         return { error: "path is required and must exist" };
       }
@@ -70139,6 +71071,47 @@ async function startDaemon(opts = {}) {
       return { stopped: true };
     }
   );
+  app.post("/api/loom/screenshot", async (req, reply) => {
+    const projectId = req.body?.projectId ?? projectCurrent()?.id;
+    const proj = projectList().find((p) => p.id === projectId);
+    if (!proj) {
+      reply.code(404);
+      return { error: "project not found" };
+    }
+    if (!req.body?.path || typeof req.body.path !== "string") {
+      reply.code(400);
+      return { error: "path is required" };
+    }
+    try {
+      const studio = await ensureStudio(proj);
+      const result = await captureRouteScreenshot(proj, studio.url, {
+        path: req.body.path,
+        viewport: req.body.viewport,
+        theme: req.body.theme,
+        fullPage: req.body.fullPage
+      });
+      if (!result.ok) {
+        reply.code(503);
+        return result;
+      }
+      if (config.featureProjectMgmt) {
+        try {
+          activityInsert({
+            projectId: proj.id,
+            kind: "session",
+            subkind: "screenshot",
+            title: `Captured ${req.body.path} @ ${result.viewport}/${result.theme}`,
+            refPath: result.file
+          });
+        } catch {
+        }
+      }
+      return result;
+    } catch (err) {
+      reply.code(500);
+      return { error: err.message };
+    }
+  });
   app.register(async (instance) => {
     instance.get(
       "/api/loom/terminal/ws",
@@ -70154,8 +71127,19 @@ async function startDaemon(opts = {}) {
           }
           return;
         }
+        const existing = getClaudeSession(proj.id);
+        if (!existing) {
+          try {
+            connection.send(
+              JSON.stringify({ kind: "error", message: "no active session \u2014 click Start session" })
+            );
+            connection.close();
+          } catch {
+          }
+          return;
+        }
         try {
-          const session = await ensureClaudeSession(proj);
+          const session = await existing;
           attachMirror(session, {
             send: (data) => connection.send(data),
             on: (event, cb) => connection.on(event, cb)
@@ -70207,19 +71191,53 @@ async function startDaemon(opts = {}) {
         const proj = projectOr4042(req.params.id, reply);
         if (!proj) return { error: "project not found" };
         const loaded = loadTokens(proj.path);
-        const resolved = resolveAll(loaded.flat);
         const tokens = [];
         for (const [key, raw] of loaded.flat) {
           const [namespace, ...rest] = key.split(".");
+          let resolved = null;
+          let error;
+          try {
+            resolved = resolveValue(raw, loaded.flat, /* @__PURE__ */ new Set([key]), [key]);
+          } catch (err) {
+            error = err.message;
+          }
           tokens.push({
             namespace: namespace ?? "",
             name: rest.join("."),
             raw,
-            resolved: resolved.get(key) ?? null
+            resolved,
+            ...error ? { error } : {}
           });
         }
         tokens.sort((a, b) => a.namespace.localeCompare(b.namespace) || a.name.localeCompare(b.name));
         return { tokens };
+      }
+    );
+    app.patch(
+      "/api/loom/projects/:id/tokens",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const key = req.body?.key;
+        const value = req.body?.value;
+        if (typeof key !== "string" || typeof value !== "string") {
+          reply.code(400);
+          return { error: "key and value are required strings" };
+        }
+        try {
+          setToken(proj.path, key, value);
+          activityInsert({
+            projectId: proj.id,
+            kind: "token",
+            subkind: "edit",
+            title: `${key} \u2192 ${value.length > 40 ? value.slice(0, 37) + "\u2026" : value}`,
+            refPath: key
+          });
+          return { ok: true, key, value };
+        } catch (err) {
+          reply.code(400);
+          return { error: err.message };
+        }
       }
     );
     app.get(
@@ -70322,6 +71340,28 @@ async function startDaemon(opts = {}) {
           return { project: opened };
         } catch (err) {
           reply.code(404);
+          return { error: err.message };
+        }
+      }
+    );
+    app.get(
+      "/api/loom/projects/:id/canvas",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return readCanvas(proj.path);
+      }
+    );
+    app.put(
+      "/api/loom/projects/:id/canvas",
+      async (req, reply) => {
+        const proj = projectOr4042(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          writeCanvas(proj.path, req.body);
+          return { ok: true };
+        } catch (err) {
+          reply.code(400);
           return { error: err.message };
         }
       }
@@ -70442,8 +71482,8 @@ async function startDaemon(opts = {}) {
       }
       const here = new URL("./", import.meta.url).pathname;
       const base = here.replace(/^\/([A-Za-z]:\/)/, "$1");
-      const path2 = join13(base, "vendor", rel);
-      if (!existsSync7(path2)) {
+      const path2 = join15(base, "vendor", rel);
+      if (!existsSync9(path2)) {
         reply.code(404);
         return { error: "not found" };
       }
@@ -70451,7 +71491,7 @@ async function startDaemon(opts = {}) {
       const isJs = path2.endsWith(".js") || path2.endsWith(".mjs");
       reply.type(isCss ? "text/css" : isJs ? "text/javascript" : "application/octet-stream");
       reply.header("cache-control", "no-store");
-      return reply.send(readFileSync9(path2));
+      return reply.send(readFileSync10(path2));
     }
   );
   app.register(async (instance) => {
@@ -70535,10 +71575,10 @@ li a:hover{background:#eee}li span{font-size:11.5px;color:#666;font-family:ui-mo
 </head><body><h1>loom \xB7 projects</h1>${empty}<ul>${rows}</ul></body></html>`;
 }
 function ensureSingleton() {
-  mkdirSync10(serverDir(), { recursive: true });
+  mkdirSync12(serverDir(), { recursive: true });
   const pidPath = serverPidPath();
-  if (existsSync7(pidPath)) {
-    const pid = Number.parseInt(readFileSync9(pidPath, "utf8"), 10);
+  if (existsSync9(pidPath)) {
+    const pid = Number.parseInt(readFileSync10(pidPath, "utf8"), 10);
     if (Number.isFinite(pid) && pid !== process.pid && isAlive(pid)) {
       throw new Error(
         `loom daemon already running as pid ${pid}; stop it via \`loom server stop\` or set LOOM_PORT to a different port`
@@ -70555,14 +71595,14 @@ function isAlive(pid) {
   }
 }
 function writeRunFiles(port) {
-  mkdirSync10(serverDir(), { recursive: true });
-  writeFileSync9(serverPidPath(), String(process.pid));
-  writeFileSync9(serverPortPath(), String(port));
+  mkdirSync12(serverDir(), { recursive: true });
+  writeFileSync10(serverPidPath(), String(process.pid));
+  writeFileSync10(serverPortPath(), String(port));
 }
 function clearRunFiles() {
   try {
-    if (existsSync7(serverPidPath())) unlinkSync2(serverPidPath());
-    if (existsSync7(serverPortPath())) unlinkSync2(serverPortPath());
+    if (existsSync9(serverPidPath())) unlinkSync2(serverPidPath());
+    if (existsSync9(serverPortPath())) unlinkSync2(serverPortPath());
   } catch {
   }
 }
@@ -70570,14 +71610,14 @@ function pkgVersion() {
   return process.env.LOOM_VERSION ?? "0.9.6";
 }
 function ensureDaemonSecret() {
-  const path2 = join13(serverDir(), "secret");
-  if (existsSync7(path2)) {
-    const value = readFileSync9(path2, "utf8").trim();
+  const path2 = join15(serverDir(), "secret");
+  if (existsSync9(path2)) {
+    const value = readFileSync10(path2, "utf8").trim();
     if (value.length >= 32) return value;
   }
   const secret = randomBytes2(32).toString("hex");
-  mkdirSync10(serverDir(), { recursive: true });
-  writeFileSync9(path2, secret, { mode: 384 });
+  mkdirSync12(serverDir(), { recursive: true });
+  writeFileSync10(path2, secret, { mode: 384 });
   return secret;
 }
 function classifyFileKind(path2) {
@@ -70605,6 +71645,15 @@ function tokenEquals(a, b) {
   }
 }
 if (isMainModule(import.meta.url, process.argv[1])) {
+  process.on("unhandledRejection", (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    process.stderr.write(`[loom-daemon] unhandledRejection: ${err.stack || err.message}
+`);
+  });
+  process.on("uncaughtException", (err) => {
+    process.stderr.write(`[loom-daemon] uncaughtException: ${err.stack || err.message}
+`);
+  });
   startDaemon().then((h) => {
     process.stderr.write(`loom daemon listening on ${h.url}
 `);
@@ -70636,17 +71685,17 @@ init_esm_shims();
 
 // src/mcp/daemon-control.ts
 init_esm_shims();
-import { existsSync as existsSync8, readFileSync as readFileSync10 } from "fs";
+import { existsSync as existsSync10, readFileSync as readFileSync11 } from "fs";
 import { spawn } from "child_process";
 import { dirname as dirname7, resolve as resolve4 } from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
 function readDaemonStatus() {
   const pidPath = serverPidPath();
   const portPath = serverPortPath();
-  if (!existsSync8(pidPath) || !existsSync8(portPath)) return { running: false };
+  if (!existsSync10(pidPath) || !existsSync10(portPath)) return { running: false };
   try {
-    const pid = Number.parseInt(readFileSync10(pidPath, "utf8").trim(), 10);
-    const port = Number.parseInt(readFileSync10(portPath, "utf8").trim(), 10);
+    const pid = Number.parseInt(readFileSync11(pidPath, "utf8").trim(), 10);
+    const port = Number.parseInt(readFileSync11(portPath, "utf8").trim(), 10);
     if (!Number.isFinite(pid) || !Number.isFinite(port)) return { running: false };
     if (!isAlive2(pid)) return { running: false };
     return {

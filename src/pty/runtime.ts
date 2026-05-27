@@ -92,6 +92,13 @@ async function bootSession(project: ProjectRecord, opts: SessionOptions): Promis
     (s): s is string => typeof s === "string" && s.length > 0,
   );
 
+  // Single-line evidence trail of the actual argv handed to claude. Surfaced
+  // because users have hit "flags don't take" without a way to verify what the
+  // CLI was actually launched with.
+  console.log(
+    `[loom-pty] spawning claude argv=${JSON.stringify(claudeArgs)} cwd=${project.path}`,
+  );
+
   const runtime = await createClaudeRuntime({
     claudeExecutable: "claude",
     claudeArgs,
@@ -105,7 +112,16 @@ async function bootSession(project: ProjectRecord, opts: SessionOptions): Promis
   const exitListeners = new Set<(code: number | null) => void>();
 
   const removeData = runtime.ptyHandle.onData((chunk) => {
-    screen.write(chunk);
+    try {
+      screen.write(chunk);
+    } catch (err) {
+      // PTY emitter callbacks run outside our request scope; an uncaught throw
+      // here would propagate to the Node event loop and crash the daemon.
+      console.error(
+        `[loom-pty] screen.write failed for project=${project.id}: ${(err as Error).stack || (err as Error).message}`,
+      );
+      return;
+    }
     for (const cb of frameListeners) {
       try {
         cb();

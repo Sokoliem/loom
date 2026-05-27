@@ -1,13 +1,29 @@
 /**
  * Project-management chrome surfaces (v0.10.0).
  *
- * Three blocks consumed by `renderStudioChrome` only when `featureProjectMgmt`
- * is true: extra HTML grafted into the layout, scoped CSS that re-tiles the
- * stage grid, and a JS chunk that drives the switcher / sidebar tabs / version
- * strip / activity drawer against the read endpoints + WS stream from Phase 2/3.
+ * Three-column layout when `featureProjectMgmt` is true:
  *
- * When the flag is off, all three return empty strings and the chrome reverts
- * to v0.9.6 behavior byte-for-byte (modulo a data attribute on <body>).
+ *   ┌─────────────────────────── chrome-bar ───────────────────────────┐
+ *   ├─────┬───────────┬────────────────────────────────────────────────┤
+ *   │     │           │           pm-project-header                    │
+ *   │ sw  │ sidebar   ├────────────────────────────────────────────────┤
+ *   │ rail│ (groups)  │              main.stage (chat | preview)       │
+ *   │     │           ├────────────────────────────────────────────────┤
+ *   │     │           │           pm-version-strip                     │
+ *   ├─────┴───────────┴────────────────────────────────────────────────┤
+ *   │                          status footer                           │
+ *   └──────────────────────────────────────────────────────────────────┘
+ *
+ * The switcher rail (48px) and resource sidebar (240px) span the three
+ * middle rows; the work column hosts the project header, the existing
+ * chat+stage `.stage` grid, and the version strip stacked vertically.
+ *
+ * Activity used to be a third column — it now lives inside the resource
+ * sidebar as a fourth collapsible group (no DOM-level changes for the
+ * activity list/filter IDs so the WS subscriber keeps working).
+ *
+ * When the flag is off, all three returned blocks are empty strings and the
+ * chrome reverts to v0.9.6 behavior byte-for-byte (modulo the data attribute).
  */
 
 import type { ProjectRecord } from "../types.js";
@@ -36,29 +52,44 @@ export function panelsBlocks(ctx: PanelsContext): {
 function shellBefore(projectId: string, projectName: string): string {
   return `
     <aside class="pm-switcher" id="pm-switcher" aria-label="Project switcher">
-      <div class="pm-switcher-head">
-        <span class="pm-section-label">Projects</span>
-        <button type="button" id="pm-new-project" class="pm-icon-btn" title="New project">＋</button>
-      </div>
-      <ul class="pm-switcher-list" id="pm-project-list"></ul>
+      <div class="pm-switcher-list" id="pm-project-list"></div>
+      <button type="button" id="pm-new-project" class="pm-switcher-add" title="New project" aria-label="New project">＋</button>
     </aside>
     <aside class="pm-sidebar" id="pm-sidebar" aria-label="Project resources">
-      <div class="pm-tabs" role="tablist">
-        <button role="tab" data-tab="routes" class="pm-tab active" aria-selected="true">Routes</button>
-        <button role="tab" data-tab="tokens" class="pm-tab" aria-selected="false">Tokens</button>
-        <button role="tab" data-tab="components" class="pm-tab" aria-selected="false">Components</button>
-      </div>
-      <div class="pm-tab-bodies">
-        <div class="pm-tab-body active" data-tab-body="routes" id="pm-routes-body">
+      <details class="pm-group" data-group="routes" open>
+        <summary><span class="pm-group-label">Routes</span><span class="pm-group-caret">▾</span></summary>
+        <div class="pm-tab-body" data-tab-body="routes" id="pm-routes-body">
           <div class="pm-empty">Loading routes…</div>
         </div>
-        <div class="pm-tab-body" data-tab-body="tokens" id="pm-tokens-body" hidden>
+      </details>
+      <details class="pm-group" data-group="tokens">
+        <summary><span class="pm-group-label">Tokens</span><span class="pm-group-caret">▾</span></summary>
+        <div class="pm-tab-body" data-tab-body="tokens" id="pm-tokens-body">
           <div class="pm-empty">Loading tokens…</div>
         </div>
-        <div class="pm-tab-body" data-tab-body="components" id="pm-components-body" hidden>
+      </details>
+      <details class="pm-group" data-group="components">
+        <summary><span class="pm-group-label">Components</span><span class="pm-group-caret">▾</span></summary>
+        <div class="pm-tab-body" data-tab-body="components" id="pm-components-body">
           <div class="pm-empty">Loading components…</div>
         </div>
-      </div>
+      </details>
+      <details class="pm-group" data-group="activity" id="pm-activity">
+        <summary><span class="pm-group-label">Activity</span><span class="pm-group-caret">▾</span></summary>
+        <div class="pm-tab-body" data-tab-body="activity" id="pm-activity-body">
+          <div class="pm-activity-filters" id="pm-activity-filters">
+            <button class="pm-chip active" data-kind="file" title="file">file</button>
+            <button class="pm-chip active" data-kind="route" title="route">route</button>
+            <button class="pm-chip active" data-kind="token" title="token">token</button>
+            <button class="pm-chip active" data-kind="component" title="component">component</button>
+            <button class="pm-chip active" data-kind="forge" title="forge">forge</button>
+            <button class="pm-chip active" data-kind="panel" title="panel">panel</button>
+            <button class="pm-chip active" data-kind="version" title="version">version</button>
+            <button class="pm-chip active" data-kind="session" title="session">session</button>
+          </div>
+          <ul class="pm-activity-list" id="pm-activity-list"></ul>
+        </div>
+      </details>
     </aside>
     <div class="pm-project-header" id="pm-project-header" data-project="${escAttr(projectId)}">
       <div class="pm-project-name">
@@ -70,7 +101,7 @@ function shellBefore(projectId: string, projectName: string): string {
   `;
 }
 
-function shellAfter(projectId: string): string {
+function shellAfter(_projectId: string): string {
   return `
     <section class="pm-version-strip" id="pm-version-strip" aria-label="Version history for current route">
       <div class="pm-version-head">
@@ -80,22 +111,6 @@ function shellAfter(projectId: string): string {
         <div class="pm-empty">No versions yet.</div>
       </div>
     </section>
-    <aside class="pm-activity" id="pm-activity" data-project="${escAttr(projectId)}" aria-label="Activity feed">
-      <div class="pm-activity-head">
-        <span class="pm-section-label">Activity</span>
-        <div class="pm-activity-filters" id="pm-activity-filters">
-          <button class="pm-chip active" data-kind="file">file</button>
-          <button class="pm-chip active" data-kind="route">route</button>
-          <button class="pm-chip active" data-kind="token">token</button>
-          <button class="pm-chip active" data-kind="component">component</button>
-          <button class="pm-chip active" data-kind="forge">forge</button>
-          <button class="pm-chip active" data-kind="panel">panel</button>
-          <button class="pm-chip active" data-kind="version">version</button>
-          <button class="pm-chip active" data-kind="session">session</button>
-        </div>
-      </div>
-      <ul class="pm-activity-list" id="pm-activity-list"></ul>
-    </aside>
   `;
 }
 
@@ -103,94 +118,200 @@ const PANEL_CSS = `
 body[data-pm="1"] {
   display: grid;
   grid-template-rows: auto auto 1fr auto auto;
-  grid-template-columns: 220px 1fr 280px;
-  grid-template-areas:
-    "header header header"
-    "switcher pmheader activity"
-    "switcher sidebarstage activity"
-    "switcher version activity"
-    "footer footer footer";
+  grid-template-columns: 48px 240px 1fr;
 }
-body[data-pm="1"] .chrome-bar { grid-area: header; }
-body[data-pm="1"] .pm-switcher { grid-area: switcher; }
-body[data-pm="1"] .pm-project-header { grid-area: pmheader; }
-body[data-pm="1"] .pm-activity { grid-area: activity; }
-body[data-pm="1"] .pm-version-strip { grid-area: version; }
-body[data-pm="1"] .status { grid-area: footer; }
-body[data-pm="1"] .stage,
-body[data-pm="1"] .pm-sidebar { grid-area: sidebarstage; }
-body[data-pm="1"] .stage {
-  display: grid;
-  grid-template-columns: 220px var(--split, 460px) 6px 1fr;
+body[data-pm="1"] .chrome-bar { grid-column: 1 / -1; grid-row: 1; }
+body[data-pm="1"] .pm-switcher { grid-column: 1; grid-row: 2 / 5; }
+body[data-pm="1"] .pm-sidebar { grid-column: 2; grid-row: 2 / 5; }
+body[data-pm="1"] .pm-project-header { grid-column: 3; grid-row: 2; }
+body[data-pm="1"] .stage { grid-column: 3; grid-row: 3; }
+body[data-pm="1"] .pm-version-strip { grid-column: 3; grid-row: 4; }
+body[data-pm="1"] .status { grid-column: 1 / -1; grid-row: 5; }
+
+.pm-switcher {
+  background: oklch(0.10 0.01 270);
+  border-right: 1px solid var(--chrome-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 0;
+  gap: 8px;
+  overflow-y: auto;
 }
-body[data-pm="1"] .pm-sidebar { display: contents; }
-
-@media (max-width: 1440px) {
-  body[data-pm="1"][data-pm-collapsed="1"] {
-    grid-template-columns: 0 1fr 0;
-  }
-  body[data-pm="1"][data-pm-collapsed="1"] .pm-switcher,
-  body[data-pm="1"][data-pm-collapsed="1"] .pm-activity { display: none; }
+.pm-switcher-list { display: flex; flex-direction: column; gap: 6px; align-items: center; width: 100%; }
+.pm-avatar {
+  width: 32px; height: 32px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: oklch(0.18 0.01 270);
+  color: var(--chrome-muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font: 600 12px/1 -apple-system, "Segoe UI", system-ui, sans-serif;
+  text-transform: uppercase;
+  text-decoration: none;
+  transition: background 80ms, border-color 80ms, color 80ms;
 }
+.pm-avatar:hover { background: oklch(0.22 0.01 270); color: var(--chrome-text); }
+.pm-avatar.active { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); }
+.pm-switcher-add {
+  width: 32px; height: 32px; border-radius: 8px;
+  background: transparent; border: 1px dashed var(--chrome-border);
+  color: var(--chrome-muted); cursor: pointer; font-size: 16px; line-height: 1;
+  margin-top: auto; flex-shrink: 0;
+}
+.pm-switcher-add:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
 
-.pm-switcher { background: var(--chrome-bg); border-right: 1px solid var(--chrome-border); padding: 10px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-.pm-switcher-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-.pm-switcher-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 2px; }
-.pm-switcher-list li { padding: 0; margin: 0; }
-.pm-switcher-list a { display: block; padding: 6px 8px; border-radius: 5px; color: var(--chrome-text); text-decoration: none; font-size: 12px; line-height: 1.3; }
-.pm-switcher-list a:hover { background: oklch(0.20 0.01 270); }
-.pm-switcher-list a.active { background: var(--chrome-accent); color: #1a1207; font-weight: 600; }
-.pm-switcher-list a small { display: block; color: var(--chrome-muted); font-size: 10.5px; margin-top: 1px; }
-.pm-switcher-list a.active small { color: rgba(26,18,7,0.7); }
-.pm-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
-.pm-icon-btn { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); width: 22px; height: 22px; border-radius: 4px; cursor: pointer; font-size: 14px; line-height: 1; }
-.pm-icon-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
-
-.pm-project-header { padding: 10px 14px; border-bottom: 1px solid var(--chrome-border); background: var(--chrome-bg); display: flex; flex-direction: column; gap: 4px; }
-.pm-project-name { display: flex; align-items: center; gap: 10px; }
-.pm-project-name strong { font-size: 14px; cursor: text; padding: 1px 4px; border-radius: 3px; }
-.pm-project-name strong:hover { background: oklch(0.18 0.01 270); }
-.pm-project-name strong[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); }
-.pm-git { font-size: 10.5px; color: var(--chrome-muted); font-family: ui-monospace, monospace; }
-.pm-git.dirty { color: oklch(0.78 0.16 70); }
-.pm-project-desc { font-size: 11.5px; color: var(--chrome-muted); cursor: text; padding: 1px 4px; border-radius: 3px; }
-.pm-project-desc:hover { background: oklch(0.18 0.01 270); }
-.pm-project-desc[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); color: var(--chrome-text); }
-
-.pm-sidebar { width: 220px; border-right: 1px solid var(--chrome-border); background: oklch(0.13 0.01 270); display: flex; flex-direction: column; min-width: 0; }
-.pm-tabs { display: flex; border-bottom: 1px solid var(--chrome-border); }
-.pm-tab { flex: 1; background: transparent; border: none; padding: 8px 4px; color: var(--chrome-muted); font: inherit; font-size: 11.5px; cursor: pointer; border-bottom: 2px solid transparent; }
-.pm-tab.active { color: var(--chrome-text); border-bottom-color: var(--chrome-accent); }
-.pm-tab-bodies { flex: 1; overflow-y: auto; padding: 8px; }
-.pm-tab-body[hidden] { display: none; }
+.pm-sidebar {
+  background: oklch(0.12 0.01 270);
+  border-right: 1px solid var(--chrome-border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.pm-group { border-bottom: 1px solid var(--chrome-border); display: flex; flex-direction: column; min-height: 0; }
+.pm-group:last-of-type { border-bottom: none; }
+.pm-group[open] { flex: 1 1 auto; min-height: 0; }
+.pm-group > summary {
+  list-style: none;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 12px;
+  cursor: pointer;
+  user-select: none;
+  background: oklch(0.13 0.01 270);
+}
+.pm-group > summary::-webkit-details-marker { display: none; }
+.pm-group > summary:hover { background: oklch(0.16 0.01 270); }
+.pm-group-label {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.6px;
+  font-weight: 600; color: var(--chrome-muted);
+}
+.pm-group[open] .pm-group-label { color: var(--chrome-text); }
+.pm-group-caret { color: var(--chrome-muted); font-size: 9px; transition: transform 120ms; transform: rotate(-90deg); }
+.pm-group[open] .pm-group-caret { transform: rotate(0deg); }
+.pm-tab-body {
+  padding: 8px 10px 10px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
 .pm-empty { color: var(--chrome-muted); font-size: 11px; padding: 12px 6px; text-align: center; font-style: italic; }
-.pm-list-row { display: flex; flex-direction: column; padding: 5px 6px; border-radius: 4px; cursor: pointer; font-size: 11.5px; line-height: 1.25; }
+.pm-list-row {
+  display: flex; flex-direction: column;
+  padding: 5px 7px; border-radius: 4px;
+  cursor: pointer; font-size: 11.5px; line-height: 1.25;
+}
 .pm-list-row:hover { background: oklch(0.18 0.01 270); }
 .pm-list-row.active { background: var(--chrome-accent); color: #1a1207; }
 .pm-list-row code { font-family: ui-monospace, monospace; font-size: 11px; }
 .pm-list-row small { color: var(--chrome-muted); font-size: 10px; margin-top: 1px; }
 .pm-list-row.active small { color: rgba(26,18,7,0.7); }
-.pm-search { width: 100%; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); color: var(--chrome-text); padding: 5px 8px; border-radius: 4px; font: inherit; font-size: 11.5px; margin-bottom: 8px; }
+.pm-search {
+  width: 100%;
+  background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border);
+  color: var(--chrome-text);
+  padding: 5px 8px; border-radius: 4px;
+  font: inherit; font-size: 11.5px;
+  margin-bottom: 6px;
+}
 .pm-search:focus { outline: 1px solid var(--chrome-accent); border-color: var(--chrome-accent); }
 .pm-swatch { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(255,255,255,0.1); vertical-align: -2px; margin-right: 6px; }
+.pm-section-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.6px; color: var(--chrome-muted); font-weight: 600; }
 
-.pm-version-strip { background: var(--chrome-bg); border-top: 1px solid var(--chrome-border); padding: 8px 14px; overflow: hidden; }
-.pm-version-head { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.pm-token-row { gap: 2px; }
+.pm-token-head { display: flex; align-items: center; gap: 6px; }
+.pm-token-value {
+  cursor: text;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  font-family: ui-monospace, monospace;
+  color: var(--chrome-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-token-value:hover { background: oklch(0.20 0.01 270); border-color: var(--chrome-border); color: var(--chrome-text); }
+.pm-token-value.pm-token-broken { color: oklch(0.65 0.18 30); font-style: italic; }
+.pm-token-input {
+  width: 100%;
+  background: oklch(0.16 0.01 270);
+  border: 1px solid var(--chrome-accent);
+  color: var(--chrome-text);
+  padding: 2px 4px;
+  border-radius: 3px;
+  font: inherit;
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px;
+  outline: none;
+}
+.pm-token-editing .pm-token-head { opacity: 0.7; }
+
+.pm-project-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--chrome-border);
+  background: oklch(0.11 0.01 270);
+  display: flex; align-items: center; gap: 14px;
+}
+.pm-project-name { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.pm-project-name strong { font-size: 14px; cursor: text; padding: 1px 4px; border-radius: 3px; }
+.pm-project-name strong:hover { background: oklch(0.18 0.01 270); }
+.pm-project-name strong[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); }
+.pm-git { font-size: 10.5px; color: var(--chrome-muted); font-family: ui-monospace, monospace; }
+.pm-git.dirty { color: oklch(0.78 0.16 70); }
+.pm-project-desc {
+  font-size: 11.5px; color: var(--chrome-muted);
+  cursor: text; padding: 1px 6px; border-radius: 3px;
+  flex: 1; min-width: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.pm-project-desc:hover { background: oklch(0.18 0.01 270); white-space: normal; overflow: visible; }
+.pm-project-desc[contenteditable="true"] { background: oklch(0.18 0.01 270); outline: 1px solid var(--chrome-accent); color: var(--chrome-text); white-space: normal; overflow: visible; }
+
+.pm-version-strip {
+  background: oklch(0.11 0.01 270);
+  border-top: 1px solid var(--chrome-border);
+  padding: 8px 14px;
+  overflow: hidden;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.pm-version-head { display: flex; align-items: center; gap: 8px; }
 .pm-version-head code { color: var(--chrome-text); font-family: ui-monospace, monospace; font-size: 10.5px; }
-.pm-version-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
-.pm-version-card { flex: 0 0 160px; background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border); border-radius: 6px; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
+.pm-version-cards { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.pm-version-card {
+  flex: 0 0 160px;
+  background: oklch(0.16 0.01 270); border: 1px solid var(--chrome-border);
+  border-radius: 6px; padding: 8px 10px;
+  display: flex; flex-direction: column; gap: 4px;
+  font-size: 11px;
+}
 .pm-version-card code { font-family: ui-monospace, monospace; font-size: 10.5px; color: var(--chrome-muted); }
 .pm-version-card .pm-version-time { color: var(--chrome-muted); font-size: 10px; }
-.pm-version-card .pm-restore-btn { margin-top: 4px; background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-text); border-radius: 4px; padding: 3px 6px; font-size: 10.5px; cursor: pointer; }
+.pm-version-card .pm-restore-btn {
+  margin-top: 4px;
+  background: transparent; border: 1px solid var(--chrome-border);
+  color: var(--chrome-text); border-radius: 4px;
+  padding: 3px 6px; font-size: 10.5px; cursor: pointer;
+}
 .pm-version-card .pm-restore-btn:hover { border-color: var(--chrome-accent); color: var(--chrome-accent); }
 
-.pm-activity { background: var(--chrome-bg); border-left: 1px solid var(--chrome-border); overflow-y: auto; display: flex; flex-direction: column; }
-.pm-activity-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--chrome-border); display: flex; flex-direction: column; gap: 6px; }
-.pm-activity-filters { display: flex; flex-wrap: wrap; gap: 4px; }
-.pm-chip { background: transparent; border: 1px solid var(--chrome-border); color: var(--chrome-muted); font-size: 10px; padding: 2px 6px; border-radius: 10px; cursor: pointer; }
+.pm-activity-filters { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.pm-chip {
+  background: transparent; border: 1px solid var(--chrome-border);
+  color: var(--chrome-muted);
+  font-size: 10px; padding: 2px 6px;
+  border-radius: 10px; cursor: pointer;
+}
 .pm-chip.active { background: var(--chrome-accent); color: #1a1207; border-color: var(--chrome-accent); font-weight: 600; }
-.pm-activity-list { list-style: none; padding: 6px 6px; margin: 0; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
-.pm-activity-list li { padding: 6px 8px; background: oklch(0.16 0.01 270); border-radius: 5px; font-size: 11px; line-height: 1.3; cursor: pointer; }
+.pm-activity-list {
+  list-style: none; padding: 0; margin: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.pm-activity-list li {
+  padding: 6px 8px; background: oklch(0.16 0.01 270);
+  border-radius: 5px;
+  font-size: 11px; line-height: 1.3;
+  cursor: pointer;
+}
 .pm-activity-list li:hover { background: oklch(0.20 0.01 270); }
 .pm-activity-list li .pm-act-meta { display: flex; gap: 6px; align-items: baseline; color: var(--chrome-muted); font-size: 10px; margin-bottom: 1px; }
 .pm-activity-list li .pm-act-kind { text-transform: uppercase; letter-spacing: 0.5px; font-size: 9px; }
@@ -235,6 +356,9 @@ function panelScript(projectId: string, initialRoute: string): string {
     if (d < 86_400_000) return Math.floor(d / 3_600_000) + "h ago";
     return Math.floor(d / 86_400_000) + "d ago";
   }
+  function initials(name) {
+    return (name || "?").trim().split(/[\\s\\-_]+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
+  }
 
   async function loadProjects() {
     try {
@@ -246,10 +370,12 @@ function panelScript(projectId: string, initialRoute: string): string {
         if (p.archived) continue;
         const a = el("a", {
           href: "#",
-          class: p.id === PROJECT_ID ? "active" : "",
+          class: "pm-avatar" + (p.id === PROJECT_ID ? " active" : ""),
+          title: p.name,
+          "aria-label": p.name,
           onclick: (e) => { e.preventDefault(); switchProject(p.id); },
-        }, p.name, el("small", null, p.path.replace(/\\\\/g, "/").split("/").slice(-2).join("/")));
-        list.appendChild(el("li", null, a));
+        }, initials(p.name));
+        list.appendChild(a);
       }
     } catch (err) { console.error("[loom-pm] loadProjects failed", err); }
   }
@@ -318,7 +444,6 @@ function panelScript(projectId: string, initialRoute: string): string {
     const descEl = $("pm-desc");
     const originals = new WeakMap();
     const editable = (node) => () => {
-      // Capture the pre-edit value so a server-side rejection can roll the DOM back.
       originals.set(node, node.textContent || "");
       node.setAttribute("contenteditable", "true");
       node.focus();
@@ -355,26 +480,6 @@ function panelScript(projectId: string, initialRoute: string): string {
     descEl.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); descEl.blur(); } });
   }
 
-  function wireTabs() {
-    const tabs = document.querySelectorAll(".pm-tab");
-    tabs.forEach((tab) => {
-      tab.addEventListener("click", () => {
-        const target = tab.dataset.tab;
-        tabs.forEach((t) => {
-          t.classList.toggle("active", t === tab);
-          t.setAttribute("aria-selected", t === tab ? "true" : "false");
-        });
-        document.querySelectorAll(".pm-tab-body").forEach((body) => {
-          const match = body.dataset.tabBody === target;
-          body.hidden = !match;
-          body.classList.toggle("active", match);
-        });
-        if (target === "routes") loadRoutes();
-        else if (target === "tokens") loadTokens();
-        else if (target === "components") loadComponents();
-      });
-    });
-  }
   async function loadRoutes() {
     const body = $("pm-routes-body");
     try {
@@ -421,8 +526,16 @@ function panelScript(projectId: string, initialRoute: string): string {
   }
   async function loadTokens() {
     const body = $("pm-tokens-body");
+    // If the user is mid-edit on any row, skip the wholesale re-render so their
+    // input doesn't get torn out of the DOM (losing typed-but-unsaved text).
+    // The next refresh after they settle their edit will catch them up.
+    if (body.querySelector(".pm-token-editing")) return;
     try {
       const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/tokens");
+      if (!r.ok) {
+        body.textContent = "Failed to load tokens (HTTP " + r.status + ").";
+        return;
+      }
       const j = await r.json();
       body.replaceChildren();
       if (!j.tokens || j.tokens.length === 0) {
@@ -435,17 +548,90 @@ function panelScript(projectId: string, initialRoute: string): string {
           body.appendChild(el("div", { class: "pm-section-label", style: "margin: 8px 0 4px 4px;" }, t.namespace));
           currentNs = t.namespace;
         }
-        const display = t.resolved || t.raw || "";
-        const isColor = display.startsWith("oklch") || /^#[0-9a-f]{3,8}$/i.test(display);
-        const row = el("div", { class: "pm-list-row" });
-        const codeWrap = el("div", null);
-        if (isColor) codeWrap.appendChild(el("span", { class: "pm-swatch", style: "background:" + display }));
-        codeWrap.appendChild(el("code", null, t.name));
-        row.appendChild(codeWrap);
-        row.appendChild(el("small", null, display));
-        body.appendChild(row);
+        body.appendChild(renderTokenRow(t));
       }
     } catch (err) { body.textContent = "Failed to load tokens."; }
+  }
+
+  // Inline-editable token row. Click the value to enter edit mode; Enter saves,
+  // Esc cancels. Server validates (e.g. cycle detection) and rolls back the UI
+  // on rejection. Persisted via PATCH /api/loom/projects/:id/tokens.
+  function renderTokenRow(t) {
+    const fullKey = (t.namespace ? t.namespace + "." : "") + t.name;
+    const display = t.resolved || t.raw || "";
+    const isColor = display.startsWith("oklch") || /^#[0-9a-f]{3,8}$/i.test(display);
+    const row = el("div", { class: "pm-list-row pm-token-row" });
+    const codeWrap = el("div", { class: "pm-token-head" });
+    if (isColor) codeWrap.appendChild(el("span", { class: "pm-swatch", style: "background:" + display }));
+    codeWrap.appendChild(el("code", null, t.name));
+    row.appendChild(codeWrap);
+
+    const valueEl = el("small", { class: "pm-token-value", title: "Click to edit" }, t.raw || "");
+    if (t.error) valueEl.classList.add("pm-token-broken");
+    row.appendChild(valueEl);
+
+    let original = t.raw || "";
+    const enterEdit = () => {
+      if (row.classList.contains("pm-token-editing")) return;
+      row.classList.add("pm-token-editing");
+      const input = el("input", { type: "text", value: original, class: "pm-token-input", spellcheck: "false" });
+      valueEl.replaceWith(input);
+      input.focus();
+      input.select();
+      let settled = false;
+      const settle = (commit) => {
+        if (settled) return;
+        settled = true;
+        row.classList.remove("pm-token-editing");
+        const next = input.value;
+        const restore = (text) => {
+          const small = el("small", { class: "pm-token-value", title: "Click to edit" }, text);
+          small.addEventListener("click", enterEdit);
+          input.replaceWith(small);
+        };
+        if (!commit || next === original) {
+          restore(original);
+          return;
+        }
+        savePatch(fullKey, next).then((ok) => {
+          if (ok) {
+            original = next;
+            restore(next);
+            // Resolved display updates on the next loadTokens() refresh, which
+            // fires when the daemon's token_changed event bubbles through the WS
+            // listener in chrome.ts. The CSS hot-swap also fires there.
+          } else {
+            restore(original);
+          }
+        });
+      };
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") { e.preventDefault(); settle(true); }
+        else if (e.key === "Escape") { e.preventDefault(); settle(false); }
+      });
+      input.addEventListener("blur", () => settle(true));
+    };
+    valueEl.addEventListener("click", enterEdit);
+    return row;
+  }
+
+  async function savePatch(key, value) {
+    try {
+      const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/tokens", {
+        method: "PATCH",
+        headers: hdrs,
+        body: JSON.stringify({ key, value }),
+      });
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({ error: "HTTP " + r.status }));
+        alert("Token update failed: " + (j.error || "unknown"));
+        return false;
+      }
+      return true;
+    } catch (err) {
+      alert("Token update failed: " + err.message);
+      return false;
+    }
   }
   async function loadComponents() {
     const body = $("pm-components-body");
@@ -523,9 +709,9 @@ function panelScript(projectId: string, initialRoute: string): string {
   }
   function activityClick(e) {
     if (e.refPath && (e.kind === "route" || e.kind === "token" || e.kind === "component")) {
-      const tabName = e.kind === "route" ? "routes" : e.kind === "token" ? "tokens" : "components";
-      const tab = document.querySelector('.pm-tab[data-tab="' + tabName + '"]');
-      if (tab) tab.click();
+      const groupName = e.kind === "route" ? "routes" : e.kind === "token" ? "tokens" : "components";
+      const grp = document.querySelector('.pm-group[data-group="' + groupName + '"]');
+      if (grp) grp.setAttribute("open", "");
     }
   }
   async function loadActivity() {
@@ -593,13 +779,14 @@ function panelScript(projectId: string, initialRoute: string): string {
 
   function boot() {
     $("pm-new-project").addEventListener("click", openCreateDialog);
-    wireTabs();
     wireHeaderEdits();
     wireActivityFilters();
     loadProjects();
     loadGitStatus();
     setInterval(loadGitStatus, 5000);
     loadRoutes();
+    loadTokens();
+    loadComponents();
     loadVersions();
     loadActivity();
     subscribeActivity();
@@ -613,6 +800,17 @@ function panelScript(projectId: string, initialRoute: string): string {
         row.classList.toggle("active", !!code && code.textContent === currentRoute);
       });
     });
+
+    // Wire the v0.11 live-nav bus: chrome.ts emits this CustomEvent after the
+    // daemon WS reports a route/component file change. Re-fetch the sidebar
+    // list so freshly-claude-generated routes appear without page reload.
+    window.addEventListener("loom:routes-refreshed", () => {
+      loadRoutes();
+      loadComponents();
+    });
+    // Token edits fire token_changed from the daemon; chrome.ts re-broadcasts
+    // as a CustomEvent so we can refresh the resolved swatch + value.
+    window.addEventListener("loom:tokens-changed", () => loadTokens());
   }
 
   if (document.readyState === "loading") {

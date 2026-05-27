@@ -1,5 +1,28 @@
 import type { ProjectRecord } from "../types.js";
 import { panelsBlocks } from "./panels.js";
+import { canvasBlocks } from "./canvas.js";
+
+/**
+ * Build a `claude` argv array from the persisted modal config. Mirrors the
+ * inline browser implementation in `chromeScript`; kept here as the canonical
+ * source so tests can verify the splitting rules without booting JSDOM.
+ *
+ * If you change this, change the inline copy in `chromeScript` as well — the
+ * `chrome.test.ts` "client/server flag-builder parity" case will catch drift.
+ */
+export interface FlagsConfig {
+  checks?: readonly string[];
+  model?: string;
+  extra?: string;
+}
+export function buildFlagsFromConfig(cfg: FlagsConfig): string[] {
+  const flags: string[] = [...(cfg.checks || [])];
+  if (cfg.model) flags.push("--model", cfg.model);
+  if (cfg.extra) {
+    for (const tok of cfg.extra.trim().split(/\s+/)) if (tok) flags.push(tok);
+  }
+  return flags;
+}
 
 export interface ChromeContext {
   project: ProjectRecord;
@@ -35,6 +58,11 @@ export function renderStudioChrome(ctx: ChromeContext): string {
   const pm = ctx.featureProjectMgmt
     ? panelsBlocks({ project: ctx.project, initialRoute })
     : { shellBefore: "", shellAfter: "", css: "", script: "" };
+  const canvas = canvasBlocks({
+    projectId: ctx.project.id,
+    vitePort: ctx.vitePort,
+    daemonSecret: ctx.daemonSecret,
+  });
   const bodyAttrs = ctx.featureProjectMgmt ? ' data-pm="1"' : "";
 
   return `<!doctype html>
@@ -43,7 +71,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>loom · ${escapeHtml(ctx.project.name)}</title>
-    <style>${CHROME_CSS}${pm.css}</style>
+    <style>${CHROME_CSS}${pm.css}${canvas.css}</style>
   </head>
   <body${bodyAttrs}>
     <header class="chrome-bar">
@@ -68,6 +96,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
             <option value="768x1024">Tablet · 768</option>
             <option value="1280x800">Desktop · 1280</option>
             <option value="1440x900">Wide · 1440</option>
+            <option value="canvas">Canvas · all routes</option>
           </select>
         </label>
         <div class="ctrl-group">
@@ -98,6 +127,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
           <iframe id="preview" src="${viteOrigin}/?route=${encodeURIComponent(initialRoute)}&theme=light" title="loom preview"></iframe>
           <div class="viewport-label"><span id="vp-label">Fit</span></div>
         </div>
+        ${canvas.shell}
       </section>
     </main>
     ${pm.shellAfter}
@@ -175,6 +205,7 @@ export function renderStudioChrome(ctx: ChromeContext): string {
 
     <script>${chromeScript(ctx)}</script>
     ${pm.script ? `<script>${pm.script}</script>` : ""}
+    <script>${canvas.script}</script>
   </body>
 </html>
 `;
@@ -290,9 +321,16 @@ const TERM_WS = ${JSON.stringify(`ws://127.0.0.1:${ctx.daemonPort}/api/loom/term
 const PROJECT_ID = ${JSON.stringify(ctx.project.id)};
 const DAEMON_SECRET = ${JSON.stringify(ctx.daemonSecret)};
 window.__loomDaemonSecret = DAEMON_SECRET;
-const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile · 360", "768x1024": "Tablet · 768", "1280x800": "Desktop · 1280", "1440x900": "Wide · 1440" };
+const VIEWPORT_LABELS = { fit: "Fit", "360x720": "Mobile · 360", "768x1024": "Tablet · 768", "1280x800": "Desktop · 1280", "1440x900": "Wide · 1440", canvas: "Canvas" };
 
-const state = { route: ${JSON.stringify(initialRoute)}, theme: "light", viewport: "fit" };
+const THEME_KEY = "loom:theme:" + ${JSON.stringify(ctx.project.id)};
+function loadTheme() {
+  try {
+    const t = localStorage.getItem(THEME_KEY);
+    return t === "dark" ? "dark" : "light";
+  } catch { return "light"; }
+}
+const state = { route: ${JSON.stringify(initialRoute)}, theme: loadTheme(), viewport: "fit" };
 const $ = (id) => document.getElementById(id);
 
 function syncIframe() {
@@ -304,9 +342,22 @@ function syncIframe() {
   iframe.src = url.toString();
 }
 
+function applyThemeButtons() {
+  document.querySelectorAll(".seg button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.theme === state.theme);
+    b.setAttribute("aria-pressed", b.dataset.theme === state.theme ? "true" : "false");
+  });
+}
+applyThemeButtons();
+
 function postToIframe(msg) {
   const iframe = $("preview");
-  try { iframe.contentWindow && iframe.contentWindow.postMessage(msg, "*"); } catch {}
+  // Target the Vite origin explicitly so a navigated-away iframe can't receive
+  // the message in some other context. Falls back to "*" only if VITE_ORIGIN
+  // isn't a valid URL (shouldn't happen — daemon emits a literal http://...).
+  let target = "*";
+  try { target = new URL(VITE_ORIGIN).origin; } catch {}
+  try { iframe.contentWindow && iframe.contentWindow.postMessage(msg, target); } catch {}
 }
 
 $("route-picker").value = state.route;
@@ -317,22 +368,73 @@ $("route-picker").addEventListener("change", (e) => {
 
 $("viewport-picker").addEventListener("change", (e) => {
   state.viewport = e.target.value;
-  $("frame-wrap").setAttribute("data-viewport", state.viewport);
-  $("vp-label").textContent = VIEWPORT_LABELS[state.viewport] || state.viewport;
+  const frameWrap = $("frame-wrap");
+  if (state.viewport === "canvas") {
+    frameWrap.style.display = "none";
+    if (window.__loomCanvas) window.__loomCanvas.show();
+  } else {
+    frameWrap.style.display = "";
+    frameWrap.setAttribute("data-viewport", state.viewport);
+    $("vp-label").textContent = VIEWPORT_LABELS[state.viewport] || state.viewport;
+    if (window.__loomCanvas) window.__loomCanvas.hide();
+  }
 });
 
 for (const btn of document.querySelectorAll(".seg button")) {
   btn.addEventListener("click", () => {
     state.theme = btn.dataset.theme;
-    document.querySelectorAll(".seg button").forEach((b) => {
-      b.classList.toggle("active", b.dataset.theme === state.theme);
-      b.setAttribute("aria-pressed", b.dataset.theme === state.theme ? "true" : "false");
-    });
+    try { localStorage.setItem(THEME_KEY, state.theme); } catch {}
+    applyThemeButtons();
     postToIframe({ kind: "loom:theme", theme: state.theme });
   });
 }
 
+// If the persisted theme differs from the iframe's initial query-string, push
+// the message immediately so the user lands on the right theme without having
+// to click. The iframe applies it via the postMessage listener in runtime.ts.
+if (state.theme !== "light") {
+  setTimeout(() => postToIframe({ kind: "loom:theme", theme: state.theme }), 0);
+}
+
 $("reload").addEventListener("click", syncIframe);
+
+// Refresh the top route-picker <select> from the daemon's current view. The
+// picker is server-rendered once at chrome boot; this lets new routes added
+// at runtime (e.g. claude scaffolds /policies during a session) appear without
+// a hard page reload. Also rebroadcasts via CustomEvent so the v0.10 sidebar
+// panel script can refresh its own list.
+async function refreshRoutePicker() {
+  try {
+    const r = await fetch("/api/loom/projects/" + PROJECT_ID + "/routes");
+    if (!r.ok) return;
+    const j = await r.json();
+    const routes = (j.routes || []).map((rt) => rt.path).sort();
+    const picker = $("route-picker");
+    const cur = picker.value;
+    picker.replaceChildren();
+    for (const p of routes) {
+      const opt = document.createElement("option");
+      opt.value = p; opt.textContent = p;
+      picker.appendChild(opt);
+    }
+    if (routes.indexOf(cur) >= 0) picker.value = cur;
+    else if (routes.length > 0) {
+      picker.value = routes[0];
+      state.route = routes[0];
+    }
+    window.dispatchEvent(new CustomEvent("loom:routes-refreshed", { detail: { routes } }));
+  } catch { /* noop */ }
+}
+
+let routeRefreshTimer = null;
+function scheduleRouteRefresh() {
+  if (routeRefreshTimer) clearTimeout(routeRefreshTimer);
+  routeRefreshTimer = setTimeout(async () => {
+    routeRefreshTimer = null;
+    await refreshRoutePicker();
+    syncIframe();
+  }, 150);
+}
 
 // WS connection to daemon — react to file changes by either telling Vite to reload
 // (Vite handles HMR itself for module changes) or doing a hard reload for token changes.
@@ -348,9 +450,18 @@ function connectWS() {
         const m = JSON.parse(ev.data);
         if (m.kind === "manifest_changed" || m.kind === "route_changed" || m.kind === "token_changed") {
           last.textContent = m.kind + " · " + new Date().toLocaleTimeString();
-          // tokens.css needs a hard reload (HMR can't see the daemon-served CSS)
+          // Token changes: soft-refresh the iframe's <link rel="stylesheet"> so
+          // user edits land in <200ms without losing scroll position or React
+          // state. The runtime.ts listener handles loom:tokens-changed.
           if (m.kind === "token_changed" || (m.path && /tokens\\//.test(m.path))) {
-            syncIframe();
+            postToIframe({ kind: "loom:tokens-changed" });
+            window.dispatchEvent(new CustomEvent("loom:tokens-changed"));
+          }
+          // routes/ and components/ changes — Vite picks up the file but its
+          // import.meta.glob result is captured at iframe boot, so new routes
+          // remain invisible to the in-iframe Router until full reload.
+          if (m.kind === "route_changed" && m.path && /[\\/](routes|components)[\\/]/.test(m.path)) {
+            scheduleRouteRefresh();
           }
         }
       } catch {}
@@ -375,11 +486,12 @@ function setTermStatus(s, detail) {
 async function startTerminal(flags) {
   termToggle.disabled = true;
   termStatus.textContent = "starting…";
+  const sentFlags = flags || [];
   try {
     const r = await fetch("/api/loom/terminal/start", {
       method: "POST",
       headers: { "content-type": "application/json", "x-loom-secret": DAEMON_SECRET },
-      body: JSON.stringify({ projectId: PROJECT_ID, flags: flags || [] }),
+      body: JSON.stringify({ projectId: PROJECT_ID, flags: sentFlags }),
     });
     const j = await r.json();
     if (!r.ok || j.error) throw new Error(j.error || ("HTTP " + r.status));
@@ -399,6 +511,11 @@ async function startTerminal(flags) {
     wsUrl: TERM_WS,
     onStatus: setTermStatus,
   });
+  // Echo the actual argv handed to claude so users can verify their flags
+  // landed end-to-end. Truncate at 80 chars to fit the term header strip.
+  const argv = sentFlags.length ? sentFlags.join(" ") : "(no flags)";
+  termStatus.title = "claude " + argv;
+  termStatus.textContent = "live · " + (argv.length > 60 ? argv.slice(0, 57) + "…" : argv);
   termToggle.textContent = "Stop";
   termToggle.setAttribute("data-running", "1");
   termToggle.disabled = false;
@@ -431,7 +548,9 @@ const flagExtra = $("flag-extra");
 function loadFlagsConfig() {
   try {
     const raw = localStorage.getItem(FLAGS_KEY);
-    return raw ? JSON.parse(raw) : { checks: [], model: "", extra: "" };
+    const cfg = raw ? JSON.parse(raw) : { checks: [], model: "", extra: "" };
+    console.log("[loom-flags] loaded for", PROJECT_ID, cfg);
+    return cfg;
   } catch {
     return { checks: [], model: "", extra: "" };
   }
@@ -443,8 +562,6 @@ function buildFlagsFromConfig(cfg) {
   const flags = [...(cfg.checks || [])];
   if (cfg.model) flags.push("--model", cfg.model);
   if (cfg.extra) {
-    // Split on whitespace; ignore empty tokens. Quoted args aren't supported
-    // here — for that, edit the persisted JSON directly or pass via MCP.
     for (const tok of cfg.extra.trim().split(/\\s+/)) if (tok) flags.push(tok);
   }
   return flags;

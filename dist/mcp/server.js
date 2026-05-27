@@ -41018,18 +41018,18 @@ function writeShadcnStarter(path2) {
     import_yaml2.default.stringify({
       seed: { hue: 250, chroma: 0.2 },
       accent: {
-        primary: "oklch(0.65 {seed.chroma} {seed.hue})",
-        muted: "oklch(0.85 0.05 {seed.hue})"
+        primary: "oklch(0.65 {color.seed.chroma} {color.seed.hue})",
+        muted: "oklch(0.85 0.05 {color.seed.hue})"
       },
       text: {
-        primary: "oklch(0.20 0.02 {seed.hue})",
-        muted: "oklch(0.45 0.02 {seed.hue})"
+        primary: "oklch(0.20 0.02 {color.seed.hue})",
+        muted: "oklch(0.45 0.02 {color.seed.hue})"
       },
       surface: {
-        base: "oklch(0.98 0.01 {seed.hue})",
-        card: "oklch(0.99 0.005 {seed.hue})"
+        base: "oklch(0.98 0.01 {color.seed.hue})",
+        card: "oklch(0.99 0.005 {color.seed.hue})"
       },
-      border: { subtle: "oklch(0.92 0.01 {seed.hue})" }
+      border: { subtle: "oklch(0.92 0.01 {color.seed.hue})" }
     })
   );
   writeFileSync2(
@@ -41082,10 +41082,27 @@ function writeShadcnStarter(path2) {
   writeFileSync2(
     join3(tokensDir(path2), "theme.yaml"),
     import_yaml2.default.stringify({
-      light: { background: "{surface.base}", foreground: "{text.primary}" },
+      light: {
+        background: "{color.surface.base}",
+        foreground: "{color.text.primary}"
+      },
       dark: {
-        background: "oklch(0.18 0.02 {seed.hue})",
-        foreground: "oklch(0.95 0.01 {seed.hue})"
+        background: "oklch(0.16 0.015 {color.seed.hue})",
+        foreground: "oklch(0.95 0.01 {color.seed.hue})",
+        surface: {
+          base: "oklch(0.16 0.015 {color.seed.hue})",
+          card: "oklch(0.20 0.018 {color.seed.hue})"
+        },
+        text: {
+          primary: "oklch(0.95 0.01 {color.seed.hue})",
+          muted: "oklch(0.70 0.015 {color.seed.hue})"
+        },
+        border: {
+          subtle: "oklch(0.30 0.02 {color.seed.hue})"
+        },
+        accent: {
+          primary: "oklch(0.72 {color.seed.chroma} {color.seed.hue})"
+        }
       }
     })
   );
@@ -41369,11 +41386,23 @@ function listTokens(projectDir, namespace) {
   }
   return out;
 }
+var TOKEN_SEGMENT = /^[A-Za-z][A-Za-z0-9_-]*$|^[0-9]+$/;
+function assertSafeRef(ref, segs) {
+  for (const seg of segs) {
+    if (!TOKEN_SEGMENT.test(seg)) {
+      throw E.invalid(
+        "token reference",
+        `segment "${seg}" must match [A-Za-z][A-Za-z0-9_-]* or be a number (got: "${ref}")`
+      );
+    }
+  }
+}
 function setToken(projectDir, ref, value) {
   const segs = ref.split(".");
   if (segs.length < 2) {
     throw E.invalid("token reference", "use namespace.path form (e.g., color.accent.primary)");
   }
+  assertSafeRef(ref, segs);
   const namespace = segs[0];
   const path2 = segs.slice(1);
   const dir = tokensDir(projectDir);
@@ -42966,21 +42995,71 @@ function registerAllTools() {
     }
   );
   r.add(
-    "route_screenshot",
-    "Render a route at a viewport (requires Playwright; returns metadata stub if absent)",
+    "canvas_render",
+    "Capture screenshots of every route in the project at the same viewport/theme. Returns the list of generated PNG paths. Useful for overview boards and visual regression diffs.",
     external_exports.object({
-      path: external_exports.string(),
-      viewport: external_exports.string().optional(),
-      theme: external_exports.string().optional(),
+      viewport: external_exports.string().optional().describe("desktop | tablet | mobile | wide | WxH"),
+      theme: external_exports.enum(["light", "dark"]).optional(),
       project: external_exports.string().optional()
     }),
-    (input) => ({
-      ok: true,
-      note: "screenshot requires Playwright + a running Vite preview; instruct the user to start a Vite dev server",
-      path: input.path,
-      viewport: input.viewport ?? "desktop",
-      theme: input.theme ?? "light"
-    })
+    async (input) => {
+      let proj;
+      if (input.project) {
+        proj = projectList().find(
+          (p) => p.id === input.project || p.name === input.project
+        );
+        if (!proj) {
+          return { ok: false, error: `project not found: ${input.project}` };
+        }
+      } else {
+        proj = projectCurrent();
+        if (!proj) {
+          return { ok: false, error: "no current project \u2014 pass `project` or open one first" };
+        }
+      }
+      const routes = routeList(proj.path).map((r2) => r2.path);
+      const results = [];
+      for (const path2 of routes) {
+        const r2 = await daemonFetch("/api/loom/screenshot", {
+          method: "POST",
+          body: {
+            projectId: proj.id,
+            path: path2,
+            viewport: input.viewport,
+            theme: input.theme
+          }
+        });
+        results.push(r2);
+      }
+      return { ok: true, projectId: proj.id, count: results.length, screenshots: results };
+    }
+  );
+  r.add(
+    "route_screenshot",
+    "Capture a PNG screenshot of a route via headless Chromium. Returns the file path under .loom/snapshots/. Requires the loom daemon to be running and Playwright + chromium installed.",
+    external_exports.object({
+      path: external_exports.string(),
+      viewport: external_exports.string().optional().describe("desktop | tablet | mobile | wide | WxH"),
+      theme: external_exports.enum(["light", "dark"]).optional(),
+      fullPage: external_exports.boolean().optional(),
+      project: external_exports.string().optional()
+    }),
+    async (input) => {
+      const proj = projectList().find(
+        (p) => p.id === input.project || p.name === input.project
+      );
+      const projectId = proj?.id;
+      return await daemonFetch("/api/loom/screenshot", {
+        method: "POST",
+        body: {
+          projectId,
+          path: input.path,
+          viewport: input.viewport,
+          theme: input.theme,
+          fullPage: input.fullPage
+        }
+      });
+    }
   );
   r.add(
     "version_snapshot",

@@ -13,6 +13,12 @@ function flag(name: string): boolean {
 export const config = {
   /** Project-management chrome (v0.10.0). Gates new daemon routes + new chrome panels. */
   featureProjectMgmt: flag("LOOM_FEATURE_PROJECT_MGMT"),
+  /** v0.11: routes/components watcher events broadcast to chrome + iframe refresh. */
+  featureLiveNav: flag("LOOM_FEATURE_LIVE_NAV"),
+  /** v0.11: inline-edit tokens panel ("tweaks") with PATCH + CSS-var hot-swap. */
+  featureTweaks: flag("LOOM_FEATURE_TWEAKS"),
+  /** v0.11: multi-route canvas viewport with pan/zoom + persisted frame positions. */
+  featureCanvas: flag("LOOM_FEATURE_CANVAS"),
   /** Local-only JSONL telemetry append to ~/.loom/telemetry.jsonl. */
   telemetry: flag("LOOM_TELEMETRY"),
 };

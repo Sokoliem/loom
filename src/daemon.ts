@@ -22,7 +22,9 @@ import {
 } from "./core/version.js";
 import { routeList } from "./core/routes.js";
 import { componentList } from "./core/components.js";
-import { loadTokens, resolveAll } from "./core/tokens.js";
+import { loadTokens, resolveValue, setToken } from "./core/tokens.js";
+import { captureRouteScreenshot } from "./screenshot/index.js";
+import { readCanvas, writeCanvas, type CanvasState } from "./core/canvas.js";
 import { gitStatus } from "./core/git.js";
 import { activityBus, activityInsert, activityList } from "./core/activity.js";
 import * as telemetry from "./core/telemetry.js";
@@ -32,6 +34,7 @@ import { ensureStudio, fullReload, stopAllStudios } from "./studio/server.js";
 import { renderStudioChrome } from "./studio/chrome.js";
 import {
   ensureClaudeSession,
+  getClaudeSession,
   sessionStatusAsync,
   stopAllClaudeSessions,
   stopClaudeSession,
@@ -318,6 +321,57 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
     },
   );
 
+  app.post<{
+    Body: {
+      projectId?: string;
+      path: string;
+      viewport?: string;
+      theme?: "light" | "dark";
+      fullPage?: boolean;
+    };
+  }>("/api/loom/screenshot", async (req, reply) => {
+    const projectId = req.body?.projectId ?? projectCurrent()?.id;
+    const proj = projectList().find((p) => p.id === projectId);
+    if (!proj) {
+      reply.code(404);
+      return { error: "project not found" };
+    }
+    if (!req.body?.path || typeof req.body.path !== "string") {
+      reply.code(400);
+      return { error: "path is required" };
+    }
+    try {
+      const studio = await ensureStudio(proj);
+      const result = await captureRouteScreenshot(proj, studio.url, {
+        path: req.body.path,
+        viewport: req.body.viewport,
+        theme: req.body.theme,
+        fullPage: req.body.fullPage,
+      });
+      if (!result.ok) {
+        reply.code(503);
+        return result;
+      }
+      if (config.featureProjectMgmt) {
+        try {
+          activityInsert({
+            projectId: proj.id,
+            kind: "session",
+            subkind: "screenshot",
+            title: `Captured ${req.body.path} @ ${result.viewport}/${result.theme}`,
+            refPath: result.file,
+          });
+        } catch {
+          /* never block on activity write */
+        }
+      }
+      return result;
+    } catch (err) {
+      reply.code(500);
+      return { error: (err as Error).message };
+    }
+  });
+
   app.register(async (instance) => {
     instance.get<{ Querystring: { projectId?: string } }>(
       "/api/loom/terminal/ws",
@@ -334,8 +388,25 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
           }
           return;
         }
+        // Only ATTACH to an existing session. Spawning a new PTY here would
+        // let stale browser tabs (reconnecting on close every few seconds)
+        // resurrect claude processes for projects the user no longer cares
+        // about — and a single bad spawn can wedge the daemon event loop.
+        // PTY creation is gated to the modal-driven POST /terminal/start.
+        const existing = getClaudeSession(proj.id);
+        if (!existing) {
+          try {
+            connection.send(
+              JSON.stringify({ kind: "error", message: "no active session — click Start session" }),
+            );
+            connection.close();
+          } catch {
+            /* noop */
+          }
+          return;
+        }
         try {
-          const session = await ensureClaudeSession(proj);
+          const session = await existing;
           attachMirror(session, {
             send: (data) => connection.send(data),
             on: (event, cb) => connection.on(event, cb as (...args: unknown[]) => void),
@@ -394,24 +465,66 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
         const proj = projectOr404(req.params.id, reply);
         if (!proj) return { error: "project not found" };
         const loaded = loadTokens(proj.path);
-        const resolved = resolveAll(loaded.flat);
+        // Resolve each token individually so a bad ref in one file doesn't
+        // collapse the entire response into a 500. The UI shows resolved=null
+        // for broken tokens which is more useful than nothing.
         const tokens: Array<{
           namespace: string;
           name: string;
           raw: string;
           resolved: string | null;
+          error?: string;
         }> = [];
         for (const [key, raw] of loaded.flat) {
           const [namespace, ...rest] = key.split(".");
+          let resolved: string | null = null;
+          let error: string | undefined;
+          try {
+            resolved = resolveValue(raw, loaded.flat, new Set([key]), [key]);
+          } catch (err) {
+            error = (err as Error).message;
+          }
           tokens.push({
             namespace: namespace ?? "",
             name: rest.join("."),
             raw,
-            resolved: resolved.get(key) ?? null,
+            resolved,
+            ...(error ? { error } : {}),
           });
         }
         tokens.sort((a, b) => a.namespace.localeCompare(b.namespace) || a.name.localeCompare(b.name));
         return { tokens };
+      },
+    );
+
+    app.patch<{ Params: { id: string }; Body: { key?: string; value?: string } }>(
+      "/api/loom/projects/:id/tokens",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        const key = req.body?.key;
+        const value = req.body?.value;
+        if (typeof key !== "string" || typeof value !== "string") {
+          reply.code(400);
+          return { error: "key and value are required strings" };
+        }
+        try {
+          // setToken validates references + writes the namespace YAML atomically.
+          // The existing chokidar watcher will pick up the change and emit
+          // token_changed downstream, so no manual broadcast is needed here.
+          setToken(proj.path, key, value);
+          activityInsert({
+            projectId: proj.id,
+            kind: "token",
+            subkind: "edit",
+            title: `${key} → ${value.length > 40 ? value.slice(0, 37) + "…" : value}`,
+            refPath: key,
+          });
+          return { ok: true, key, value };
+        } catch (err) {
+          reply.code(400);
+          return { error: (err as Error).message };
+        }
       },
     );
 
@@ -522,6 +635,30 @@ export async function startDaemon(opts: DaemonOptions = {}): Promise<DaemonHandl
           return { project: opened };
         } catch (err: unknown) {
           reply.code(404);
+          return { error: (err as Error).message };
+        }
+      },
+    );
+
+    app.get<{ Params: { id: string } }>(
+      "/api/loom/projects/:id/canvas",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        return readCanvas(proj.path);
+      },
+    );
+
+    app.put<{ Params: { id: string }; Body: CanvasState }>(
+      "/api/loom/projects/:id/canvas",
+      async (req, reply) => {
+        const proj = projectOr404(req.params.id, reply);
+        if (!proj) return { error: "project not found" };
+        try {
+          writeCanvas(proj.path, req.body);
+          return { ok: true };
+        } catch (err) {
+          reply.code(400);
           return { error: (err as Error).message };
         }
       },
@@ -853,6 +990,17 @@ function tokenEquals(a: string, b: string): boolean {
 }
 
 if (isMainModule(import.meta.url, process.argv[1])) {
+  // Survive async crashes so a single bad PTY callback or stray rejection
+  // doesn't take down the whole studio. Logged so the next repro leaves a
+  // trace in the daemon log instead of a silent disappearance.
+  process.on("unhandledRejection", (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    process.stderr.write(`[loom-daemon] unhandledRejection: ${err.stack || err.message}\n`);
+  });
+  process.on("uncaughtException", (err) => {
+    process.stderr.write(`[loom-daemon] uncaughtException: ${err.stack || err.message}\n`);
+  });
+
   startDaemon().then((h) => {
     process.stderr.write(`loom daemon listening on ${h.url}\n`);
     const stop = async () => {

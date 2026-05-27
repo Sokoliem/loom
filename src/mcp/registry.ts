@@ -311,21 +311,72 @@ export function registerAllTools(): ToolRegistry {
   );
 
   r.add(
-    "route_screenshot",
-    "Render a route at a viewport (requires Playwright; returns metadata stub if absent)",
+    "canvas_render",
+    "Capture screenshots of every route in the project at the same viewport/theme. Returns the list of generated PNG paths. Useful for overview boards and visual regression diffs.",
     z.object({
-      path: z.string(),
-      viewport: z.string().optional(),
-      theme: z.string().optional(),
+      viewport: z.string().optional().describe("desktop | tablet | mobile | wide | WxH"),
+      theme: z.enum(["light", "dark"]).optional(),
       project: z.string().optional(),
     }),
-    (input) => ({
-      ok: true,
-      note: "screenshot requires Playwright + a running Vite preview; instruct the user to start a Vite dev server",
-      path: input.path,
-      viewport: input.viewport ?? "desktop",
-      theme: input.theme ?? "light",
+    async (input) => {
+      let proj;
+      if (input.project) {
+        proj = projectList().find(
+          (p) => p.id === input.project || p.name === input.project,
+        );
+        if (!proj) {
+          return { ok: false, error: `project not found: ${input.project}` };
+        }
+      } else {
+        proj = projectCurrent();
+        if (!proj) {
+          return { ok: false, error: "no current project — pass `project` or open one first" };
+        }
+      }
+      const routes = routeList(proj.path).map((r) => r.path);
+      const results: Array<unknown> = [];
+      for (const path of routes) {
+        const r = await daemonFetch("/api/loom/screenshot", {
+          method: "POST",
+          body: {
+            projectId: proj.id,
+            path,
+            viewport: input.viewport,
+            theme: input.theme,
+          },
+        });
+        results.push(r);
+      }
+      return { ok: true, projectId: proj.id, count: results.length, screenshots: results };
+    },
+  );
+
+  r.add(
+    "route_screenshot",
+    "Capture a PNG screenshot of a route via headless Chromium. Returns the file path under .loom/snapshots/. Requires the loom daemon to be running and Playwright + chromium installed.",
+    z.object({
+      path: z.string(),
+      viewport: z.string().optional().describe("desktop | tablet | mobile | wide | WxH"),
+      theme: z.enum(["light", "dark"]).optional(),
+      fullPage: z.boolean().optional(),
+      project: z.string().optional(),
     }),
+    async (input) => {
+      const proj = projectList().find(
+        (p) => p.id === input.project || p.name === input.project,
+      );
+      const projectId = proj?.id;
+      return await daemonFetch("/api/loom/screenshot", {
+        method: "POST",
+        body: {
+          projectId,
+          path: input.path,
+          viewport: input.viewport,
+          theme: input.theme,
+          fullPage: input.fullPage,
+        },
+      });
+    },
   );
 
   // ------------------------------------------------------------- Versions

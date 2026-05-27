@@ -285,24 +285,27 @@ function scaffoldProject(path: string, name: string, template: string): void {
 }
 
 function writeShadcnStarter(path: string): void {
-  // Seed tokens
+  // Seed tokens. Refs MUST be fully qualified (`{color.seed.hue}`, not
+  // `{seed.hue}`) because `loadTokens` flattens every file under its filename
+  // namespace — so `seed.hue` in color.yaml lives in the flat map as
+  // `color.seed.hue`. Unqualified refs throw E_TOKEN_NOT_FOUND at resolve time.
   writeFileSync(
     join(tokensDir(path), "color.yaml"),
     YAML.stringify({
       seed: { hue: 250, chroma: 0.2 },
       accent: {
-        primary: "oklch(0.65 {seed.chroma} {seed.hue})",
-        muted: "oklch(0.85 0.05 {seed.hue})",
+        primary: "oklch(0.65 {color.seed.chroma} {color.seed.hue})",
+        muted: "oklch(0.85 0.05 {color.seed.hue})",
       },
       text: {
-        primary: "oklch(0.20 0.02 {seed.hue})",
-        muted: "oklch(0.45 0.02 {seed.hue})",
+        primary: "oklch(0.20 0.02 {color.seed.hue})",
+        muted: "oklch(0.45 0.02 {color.seed.hue})",
       },
       surface: {
-        base: "oklch(0.98 0.01 {seed.hue})",
-        card: "oklch(0.99 0.005 {seed.hue})",
+        base: "oklch(0.98 0.01 {color.seed.hue})",
+        card: "oklch(0.99 0.005 {color.seed.hue})",
       },
-      border: { subtle: "oklch(0.92 0.01 {seed.hue})" },
+      border: { subtle: "oklch(0.92 0.01 {color.seed.hue})" },
     }),
   );
   writeFileSync(
@@ -352,13 +355,35 @@ function writeShadcnStarter(path: string): void {
       easing: { out: "cubic-bezier(0.16, 1, 0.3, 1)", inOut: "cubic-bezier(0.65, 0, 0.35, 1)" },
     }),
   );
+  // theme.yaml drives the dark/light toggle. Each entry overrides the matching
+  // semantic CSS var under `[data-theme="<mode>"]`, so `theme.dark.surface.base`
+  // re-defines `--surface-base` only when the iframe's <html> has data-theme=dark.
+  // The base color.* values are always emitted under `:root, [data-theme="light"]`,
+  // so light mode = the base set and only dark needs explicit overrides.
   writeFileSync(
     join(tokensDir(path), "theme.yaml"),
     YAML.stringify({
-      light: { background: "{surface.base}", foreground: "{text.primary}" },
+      light: {
+        background: "{color.surface.base}",
+        foreground: "{color.text.primary}",
+      },
       dark: {
-        background: "oklch(0.18 0.02 {seed.hue})",
-        foreground: "oklch(0.95 0.01 {seed.hue})",
+        background: "oklch(0.16 0.015 {color.seed.hue})",
+        foreground: "oklch(0.95 0.01 {color.seed.hue})",
+        surface: {
+          base: "oklch(0.16 0.015 {color.seed.hue})",
+          card: "oklch(0.20 0.018 {color.seed.hue})",
+        },
+        text: {
+          primary: "oklch(0.95 0.01 {color.seed.hue})",
+          muted: "oklch(0.70 0.015 {color.seed.hue})",
+        },
+        border: {
+          subtle: "oklch(0.30 0.02 {color.seed.hue})",
+        },
+        accent: {
+          primary: "oklch(0.72 {color.seed.chroma} {color.seed.hue})",
+        },
       },
     }),
   );

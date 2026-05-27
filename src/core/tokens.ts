@@ -92,11 +92,29 @@ export function listTokens(projectDir: string, namespace?: string): Record<strin
   return out;
 }
 
+// Identifier shape for namespaces + path segments. Restrictive on purpose:
+// every segment is used to construct a filesystem path (the namespace becomes
+// `<tokens>/<namespace>.yaml`) and a YAML key. Allowing `..`, `/`, or `\` would
+// let a malicious PATCH escape the tokens directory entirely.
+const TOKEN_SEGMENT = /^[A-Za-z][A-Za-z0-9_-]*$|^[0-9]+$/;
+
+function assertSafeRef(ref: string, segs: string[]): void {
+  for (const seg of segs) {
+    if (!TOKEN_SEGMENT.test(seg)) {
+      throw E.invalid(
+        "token reference",
+        `segment "${seg}" must match [A-Za-z][A-Za-z0-9_-]* or be a number (got: "${ref}")`,
+      );
+    }
+  }
+}
+
 export function setToken(projectDir: string, ref: string, value: string): void {
   const segs = ref.split(".");
   if (segs.length < 2) {
     throw E.invalid("token reference", "use namespace.path form (e.g., color.accent.primary)");
   }
+  assertSafeRef(ref, segs);
   const namespace = segs[0]!;
   const path = segs.slice(1);
   const dir = tokensDir(projectDir);

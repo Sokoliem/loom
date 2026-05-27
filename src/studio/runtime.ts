@@ -81,6 +81,39 @@ const layoutMods = import.meta.glob("../../routes/_layout.{tsx,jsx}", { eager: f
   () => Promise<{ default: React.ComponentType<{ children: React.ReactNode }> }>
 >;
 
+// Hot-swap CSS vars without a full reload when the daemon emits a token change.
+// The chrome.ts WS listener posts \`loom:tokens-changed\` here, and we re-fetch
+// /__loom/tokens.css by tacking a cache-busting query param onto its <link>.
+// We accept messages only from the loom daemon origin to harden against other
+// localhost tabs spamming us; the daemon URL is read from the studio query.
+const LOOM_DAEMON_ORIGIN = (() => {
+  try {
+    const p = new URL(window.location.href).searchParams.get("__loomDaemonOrigin");
+    if (p) return p;
+  } catch {}
+  return null;
+})();
+function isTrustedLoomMessage(e: MessageEvent): boolean {
+  // Same-origin (the chrome iframe-parents us across origins, so the parent's
+  // origin is the daemon's; messages from the parent count as trusted).
+  if (e.source && e.source === window.parent) return true;
+  if (LOOM_DAEMON_ORIGIN && e.origin === LOOM_DAEMON_ORIGIN) return true;
+  return e.origin === window.location.origin;
+}
+window.addEventListener("message", (e: MessageEvent) => {
+  if (!isTrustedLoomMessage(e)) return;
+  if ((e as any)?.data?.kind !== "loom:tokens-changed") return;
+  const link = document.querySelector<HTMLLinkElement>('link[href*="/__loom/tokens.css"]');
+  if (!link) return;
+  try {
+    const u = new URL(link.href, location.origin);
+    u.searchParams.set("ts", String(Date.now()));
+    link.href = u.toString();
+  } catch {
+    /* noop */
+  }
+});
+
 createRoot(document.getElementById("loom-root")!).render(
   <React.StrictMode>
     <Router routeMods={routeMods} layoutMods={layoutMods} />
@@ -144,6 +177,9 @@ export const Router: React.FC<{ routeMods: LoaderMap; layoutMods: LayoutLoaderMa
 
   useEffect(() => {
     const onMessage = (e: MessageEvent) => {
+      // Only trust the parent iframe (the loom chrome) — other localhost tabs
+      // shouldn't be able to drive our route or theme.
+      if (e.source !== window.parent && e.origin !== window.location.origin) return;
       if (e?.data?.kind === "loom:route") setPath(e.data.path || "/");
       if (e?.data?.kind === "loom:theme") {
         const t = e.data.theme === "dark" ? "dark" : "light";
